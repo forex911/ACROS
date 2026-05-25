@@ -1,0 +1,6 @@
+resources:
+  - ../../base
+
+patchesStrategicMerge:
+  - backend-prod-patch.yaml
+  - worker-prod-patch.yaml

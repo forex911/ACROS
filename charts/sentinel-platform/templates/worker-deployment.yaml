@@ -1,0 +1,36 @@
+{{- if .Values.image.worker.repository }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel-worker
+  labels:
+    app: sentinel-worker
+spec:
+  replicas: {{ .Values.replicaCount.worker }}
+  selector:
+    matchLabels:
+      app: sentinel-worker
+  template:
+    metadata:
+      labels:
+        app: sentinel-worker
+    spec:
+      serviceAccountName: sentinel-worker-sa
+      containers:
+        - name: worker
+          image: "{{ .Values.image.worker.repository }}:{{ .Values.image.worker.tag }}"
+          ports:
+            - containerPort: 6000
+          env:
+            - name: CELERY_BROKER_URL
+              value: "redis://{{ .Values.redis.address }}"
+          resources:
+            requests:
+              cpu: "{{ .Values.resources.worker.requests.cpu }}"
+              memory: "{{ .Values.resources.worker.requests.memory }}"
+            limits:
+              cpu: "{{ .Values.resources.worker.limits.cpu }}"
+              memory: "{{ .Values.resources.worker.limits.memory }}"
+
+---
+{{- end }}

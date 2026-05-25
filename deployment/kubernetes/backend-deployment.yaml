@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel-backend
+  namespace: sentinel-backend
+  labels:
+    app: sentinel-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sentinel-backend
+  template:
+    metadata:
+      labels:
+        app: sentinel-backend
+    spec:
+      serviceAccountName: sentinel-backend-sa
+      containers:
+        - name: backend
+          image: sentinel/backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: sentinel-backend-secrets
+            - configMapRef:
+                name: sentinel-backend-config
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel-backend
+  namespace: sentinel-backend
+spec:
+  selector:
+    app: sentinel-backend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sentinel-backend-config
+  namespace: sentinel-backend
+data:
+  UPLOAD_DIR: "/tmp/uploads"
+  LOG_LEVEL: "INFO"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sentinel-backend-secrets
+  namespace: sentinel-backend
+type: Opaque
+stringData:
+  # Replace values with secrets (do not commit real credentials)
+  MONGO_URI: "mongodb://mongo-0.mongo-svc.sentinel-storage.svc.cluster.local:27017"
+  REDIS_URL: "redis://redis.sentinel-storage.svc.cluster.local:6379/0"
+  CELERY_BROKER_URL: "redis://redis.sentinel-storage.svc.cluster.local:6379/0"
+  S3_ENDPOINT: "http://minio.sentinel-storage:9000"
+  S3_ACCESS_KEY: "minio"
+  S3_SECRET_KEY: "minio123"
+  S3_BUCKET: "uploads"
+
+---
+# Example Ingress (requires an ingress controller)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sentinel-backend-ingress
+  namespace: sentinel-backend
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+    - host: sentinel.example.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: sentinel-backend
+                port:
+                  number: 80

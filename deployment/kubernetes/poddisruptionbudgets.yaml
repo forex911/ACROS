@@ -1,0 +1,22 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend-pdb
+  namespace: sentinel-backend
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: sentinel-backend
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: worker-pdb
+  namespace: sentinel-workers
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: sentinel-worker

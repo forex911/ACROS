@@ -1,0 +1,7 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel-backend
+  namespace: sentinel-backend
+spec:
+  replicas: 1

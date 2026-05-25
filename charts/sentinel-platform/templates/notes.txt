@@ -1,0 +1,3 @@
+This Helm chart is a minimal scaffold for the SentinelAI platform.
+
+Customize templates/values.yaml and templates/* as needed before deploying.

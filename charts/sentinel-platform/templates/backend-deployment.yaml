@@ -1,0 +1,51 @@
+{{- if .Values.image.backend.repository }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel-backend
+  labels:
+    app: sentinel-backend
+spec:
+  replicas: {{ .Values.replicaCount.backend }}
+  selector:
+    matchLabels:
+      app: sentinel-backend
+  template:
+    metadata:
+      labels:
+        app: sentinel-backend
+    spec:
+      serviceAccountName: sentinel-backend-sa
+      containers:
+        - name: backend
+          image: "{{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}"
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MONGO_URI
+              value: "{{ .Values.mongo.uri }}"
+            - name: REDIS_URL
+              value: "redis://{{ .Values.redis.address }}"
+            - name: S3_ENDPOINT
+              value: "{{ .Values.s3.endpoint }}"
+          resources:
+            requests:
+              cpu: "{{ .Values.resources.backend.requests.cpu }}"
+              memory: "{{ .Values.resources.backend.requests.memory }}"
+            limits:
+              cpu: "{{ .Values.resources.backend.limits.cpu }}"
+              memory: "{{ .Values.resources.backend.limits.memory }}"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel-backend
+spec:
+  selector:
+    app: sentinel-backend
+  ports:
+    - port: {{ .Values.service.backend.port }}
+      targetPort: 8000
+  type: ClusterIP
+{{- end }}

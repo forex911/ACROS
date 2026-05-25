@@ -1,0 +1,41 @@
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# Install production dependencies
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Copy source and prune dev files (expects package.json scripts to be present)
+COPY . .
+RUN npm prune --production || true
+
+FROM node:18-alpine AS runtime
+
+# Create non-root user and install tini for proper signal handling
+RUN addgroup -S appgroup && adduser -S -G appgroup appuser \
+	&& apk add --no-cache tini
+
+WORKDIR /app
+
+# Copy built app from builder stage
+COPY --from=builder /app /app
+
+# Ensure non-root ownership
+RUN chown -R appuser:appgroup /app
+
+# Use non-root user for runtime
+USER appuser
+
+ENV NODE_ENV=production
+EXPOSE 8080
+
+# Healthcheck (adjust path if your service uses a different route)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s CMD wget -qO- http://localhost:8080/health || exit 1
+
+# Entrypoint uses tini to forward signals; entrypoint script must exist and be executable
+ENTRYPOINT ["/sbin/tini", "--", "/app/entrypoint.sh"]
+
+# Best-practice: run container with additional runtime flags:
+# --security-opt seccomp=./seccomp_profile.json --cap-drop=ALL --read-only --no-new-privileges --tmpfs /tmp:rw,size=100m
+

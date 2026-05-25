@@ -1,0 +1,9 @@
+resources:
+  - ../../backend-deployment.yaml
+  - ../../worker-deployment-scaledobject.yaml
+  - ../../redis-statefulset.yaml
+  - ../../mongodb-statefulset.yaml
+  - ../../minio-deployment.yaml
+  - ../../networkpolicy.yaml
+  - ../../serviceaccounts-rbac.yaml
+  - ../../poddisruptionbudgets.yaml

@@ -1,0 +1,74 @@
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+  pull_request:
+    paths:
+      - 'backend/**'
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dev deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff black pytest bandit
+      - name: Lint (ruff)
+        run: ruff backend --fix || true
+      - name: Format (black check)
+        run: black --check backend || true
+      - name: Unit tests
+        run: pytest backend/tests -q
+      - name: Security scan (bandit)
+        run: bandit -r backend -ll
+
+  build-and-push:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Log in to registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.REGISTRY_HOST }}
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - name: Build and push image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ secrets.REGISTRY_HOST }}/sentinel/backend:${{ github.sha }}
+      - name: Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.REGISTRY_HOST }}/sentinel/backend:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Trigger ArgoCD sync (optional)
+        run: |
+          echo "Triggering ArgoCD sync..."
+          # Example using ArgoCD API token stored in secrets
+          curl -k -s -X POST "${{ secrets.ARGOCD_SERVER }}/api/v1/applications/sentinel-backend/sync" \
+            -H "Authorization: Bearer ${{ secrets.ARGOCD_TOKEN }}"

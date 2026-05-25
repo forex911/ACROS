@@ -1,0 +1,19 @@
+{{- if .Capabilities.APIVersions.Has "keda.sh/v1alpha1" }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: sentinel-worker-scaledobject
+spec:
+  scaleTargetRef:
+    name: sentinel-worker
+  pollingInterval: 30
+  cooldownPeriod: 300
+  minReplicaCount: 1
+  maxReplicaCount: 20
+  triggers:
+    - type: redis
+      metadata:
+        address: "{{ .Values.redis.address }}"
+        listName: "celery"
+        listLength: "10"
+{{- end }}

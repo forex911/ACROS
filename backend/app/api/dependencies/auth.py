@@ -1,0 +1,52 @@
+from fastapi import Depends, HTTPException, status, Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from typing import List
+
+from app.core.security import decode_token
+from app.database.redis import redis_client
+from app.models.user_model import find_by_username
+from app.core.config import API_KEY_HEADER
+from fastapi import Header
+from app.models.user_model import users
+
+bearer_scheme = HTTPBearer(auto_error=False)
+
+
+async def _is_token_revoked(jti: str) -> bool:
+    # token revocation stored in redis as key 'revoked:{jti}'
+    key = f"revoked:{jti}"
+    val = await redis_client.get(key)
+    return val is not None
+
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
+    # Support API key header as alternative auth mechanism
+    def _header_name():
+        return API_KEY_HEADER
+
+    # FastAPI cannot access raw headers here, so credentials may be None when using API Key middleware
+    if not credentials:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    token = credentials.credentials
+    try:
+        payload = decode_token(token)
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    jti = payload.get('jti')
+    if await _is_token_revoked(jti):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token revoked")
+    username = payload.get('sub')
+    user = await find_by_username(username)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    return user
+
+
+def require_roles(roles: List[str]):
+    async def _validator(user=Depends(get_current_user)):
+        user_roles = user.get('roles', [])
+        if not any(r in user_roles for r in roles):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="insufficient_role")
+        return user
+
+    return _validator

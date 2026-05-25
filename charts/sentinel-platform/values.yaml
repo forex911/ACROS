@@ -1,0 +1,47 @@
+replicaCount:
+  backend: 2
+  worker: 1
+
+image:
+  backend:
+    repository: sentinel/backend
+    tag: latest
+  worker:
+    repository: sentinel/sandbox-worker
+    tag: latest
+
+resources:
+  backend:
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  worker:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+
+service:
+  backend:
+    port: 80
+
+minio:
+  enabled: true
+  bucket: uploads
+
+s3:
+  endpoint: http://minio.sentinel-storage:9000
+  accessKey: minio
+  secretKey: minio123
+  useSSL: false
+
+redis:
+  address: redis.sentinel-storage.svc.cluster.local:6379
+
+mongo:
+  uri: mongodb://mongo-0.mongo-svc.sentinel-storage.svc.cluster.local:27017

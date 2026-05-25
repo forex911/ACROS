@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel-backend
+  namespace: sentinel-backend
+spec:
+  replicas: 4
+  template:
+    spec:
+      containers:
+        - name: backend
+          resources:
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
