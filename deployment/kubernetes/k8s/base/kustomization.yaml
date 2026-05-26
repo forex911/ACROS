@@ -1,9 +1,16 @@
 resources:
-  - ../../backend-deployment.yaml
-  - ../../worker-deployment-scaledobject.yaml
-  - ../../redis-statefulset.yaml
-  - ../../mongodb-statefulset.yaml
-  - ../../minio-deployment.yaml
-  - ../../networkpolicy.yaml
-  - ../../serviceaccounts-rbac.yaml
-  - ../../poddisruptionbudgets.yaml
+  - backend-deployment.yaml
+  - worker-deployment-scaledobject.yaml
+  - redis-statefulset.yaml
+  - mongodb-statefulset.yaml
+  - minio-deployment.yaml
+  - networkpolicy.yaml
+  - network-policies.yaml
+  - serviceaccounts-rbac.yaml
+  - poddisruptionbudgets.yaml
+  - gatekeeper-policies.yaml
+  - gvisor-runtimeclass.yaml
+  - kata-runtimeclass.yaml
+
+patches:
+  - path: security-contexts.yaml

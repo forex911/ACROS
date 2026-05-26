@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inetsim-sinkhole
+  namespace: sandbox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inetsim
+  template:
+    metadata:
+      labels:
+        app: inetsim
+    spec:
+      containers:
+      - name: inetsim
+        image: phocean/inetsim
+        ports:
+        - containerPort: 53
+          protocol: UDP
+        - containerPort: 80
+        - containerPort: 443
+        securityContext:
+          capabilities:
+            add: ["NET_BIND_SERVICE"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inetsim-service
+  namespace: sandbox
+spec:
+  selector:
+    app: inetsim
+  ports:
+    - name: dns
+      protocol: UDP
+      port: 53
+      targetPort: 53
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+    - name: https
+      protocol: TCP
+      port: 443
+      targetPort: 443

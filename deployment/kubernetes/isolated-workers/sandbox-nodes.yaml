@@ -1,0 +1,27 @@
+# This manifest requires administrative access to the Kubernetes cluster to configure nodes.
+# It taints specific nodes to prevent generic workloads from landing on them,
+# reserving them exclusively for high-risk malware sandbox execution.
+
+apiVersion: v1
+kind: Node
+metadata:
+  name: sandbox-worker-01
+  labels:
+    sandbox-enabled: "true"
+spec:
+  taints:
+  - key: "sandbox"
+    value: "true"
+    effect: "NoSchedule"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: sandbox-worker-02
+  labels:
+    sandbox-enabled: "true"
+spec:
+  taints:
+  - key: "sandbox"
+    value: "true"
+    effect: "NoSchedule"

@@ -7,7 +7,7 @@ import { useWebSocket } from '../hooks/useWebSocket';
 
 const AnalysisDetail: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
-  const [activeTab, setActiveTab] = useState<'overview' | 'telemetry' | 'iocs'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'telemetry' | 'iocs' | 'visualization'>('overview');
 
   const { data: analysis, isLoading, error } = useQuery({
     queryKey: ['analysis', jobId],
@@ -55,7 +55,7 @@ const AnalysisDetail: React.FC = () => {
 
       {/* Tabs */}
       <div className="flex space-x-1 border-b border-cyber-border">
-        {['overview', 'telemetry', 'iocs'].map(tab => (
+        {['overview', 'telemetry', 'iocs', 'visualization'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab as any)}
@@ -217,6 +217,69 @@ const AnalysisDetail: React.FC = () => {
                   </div>
                 )) : (
                   <div className="text-gray-500 font-mono text-sm">No YARA matches.</div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'visualization' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+            {/* Sandbox Lifecycle */}
+            <div className="cyber-panel p-6 col-span-2">
+              <h3 className="text-cyber-accent font-mono text-sm mb-4">SANDBOX LIFECYCLE TIMELINE</h3>
+              <div className="flex justify-between items-center bg-cyber-dark p-4 rounded border border-cyber-border">
+                <div className="text-center flex-1"><div className={`w-3 h-3 rounded-full mx-auto mb-2 ${isConnected ? 'bg-cyber-green shadow-[0_0_10px_#00ff00]' : 'bg-gray-600'}`}></div><div className="text-xs font-mono text-gray-400">VM BOOTING</div></div>
+                <div className="flex-1 h-px bg-cyber-border"></div>
+                <div className="text-center flex-1"><div className={`w-3 h-3 rounded-full mx-auto mb-2 ${isConnected ? 'bg-cyber-green shadow-[0_0_10px_#00ff00]' : 'bg-gray-600'}`}></div><div className="text-xs font-mono text-gray-400">PAYLOAD INJECTED</div></div>
+                <div className="flex-1 h-px bg-cyber-border"></div>
+                <div className="text-center flex-1"><div className={`w-3 h-3 rounded-full mx-auto mb-2 ${messages.length > 0 ? 'bg-cyber-alert shadow-[0_0_10px_#ff003c]' : 'bg-gray-600'}`}></div><div className="text-xs font-mono text-gray-400">DETONATING</div></div>
+                <div className="flex-1 h-px bg-cyber-border"></div>
+                <div className="text-center flex-1"><div className={`w-3 h-3 rounded-full mx-auto mb-2 ${analysis?.status === 'completed' ? 'bg-cyber-green shadow-[0_0_10px_#00ff00]' : 'bg-gray-600'}`}></div><div className="text-xs font-mono text-gray-400">TEARDOWN</div></div>
+              </div>
+            </div>
+
+            {/* Process Tree */}
+            <div className="cyber-panel p-6 overflow-auto">
+              <h3 className="text-cyber-accent font-mono text-sm mb-4">PROCESS ANCESTRY TREE</h3>
+              <div className="font-mono text-sm space-y-2 text-gray-300">
+                <div className="flex items-center"><Activity className="w-4 h-4 mr-2 text-gray-500" /> [1000] python.exe (sandbox_runner)</div>
+                {messages.filter(m => m.type === 'PROCESS_CREATE').map((m, i) => (
+                  <div key={i} className="pl-6 flex items-center border-l-2 border-cyber-border ml-2">
+                    <span className="w-4 h-px bg-cyber-border mr-2"></span>
+                    <TerminalSquare className="w-4 h-4 mr-2 text-cyber-alert" /> 
+                    <span className="text-cyber-alert font-bold mr-2">[{m.data.pid || 'NEW'}]</span> 
+                    {m.data.cmdline || m.data.filename || m.data.comm || 'Unknown Process'}
+                  </div>
+                ))}
+                {messages.filter(m => m.type === 'PROCESS_CREATE').length === 0 && (
+                   <div className="pl-6 text-gray-500 italic">No child processes spawned.</div>
+                )}
+              </div>
+            </div>
+
+            {/* Network Graph */}
+            <div className="cyber-panel p-6 overflow-auto">
+              <h3 className="text-cyber-accent font-mono text-sm mb-4">NETWORK COMMUNICATIONS</h3>
+              <div className="font-mono text-sm space-y-3">
+                {messages.filter(m => m.type === 'DNS_QUERY' || m.type === 'SOCKET_CONNECT' || m.type === 'HTTP_REQUEST').map((m, i) => (
+                  <div key={i} className="flex items-center justify-between bg-cyber-dark p-2 rounded border border-cyber-border">
+                    <div className="flex items-center text-gray-400">
+                      <TerminalSquare className="w-4 h-4 mr-2" />
+                      Payload
+                    </div>
+                    <div className="flex-1 px-4 flex items-center justify-center">
+                      <div className="h-px bg-cyber-accent flex-1"></div>
+                      <span className="text-[10px] text-cyber-accent px-2">{m.type}</span>
+                      <div className="h-px bg-cyber-accent flex-1"></div>
+                    </div>
+                    <div className="text-cyber-accent break-all text-right max-w-[150px]">
+                      {m.data.query || m.data.dest_ip || m.data.url || 'External Host'}
+                    </div>
+                  </div>
+                ))}
+                {messages.filter(m => m.type === 'DNS_QUERY' || m.type === 'SOCKET_CONNECT' || m.type === 'HTTP_REQUEST').length === 0 && (
+                  <div className="text-gray-500 italic">No network activity observed.</div>
                 )}
               </div>
             </div>
