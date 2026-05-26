@@ -1,32 +1,41 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import api from '../api/client';
 import { StatCard } from '../components/dashboard/StatCard';
 import { Activity, ShieldAlert, Cpu, Database } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const mockChartData = [
-  { time: '00:00', detections: 12 },
-  { time: '04:00', detections: 19 },
-  { time: '08:00', detections: 3 },
-  { time: '12:00', detections: 45 },
-  { time: '16:00', detections: 22 },
-  { time: '20:00', detections: 14 },
-  { time: '24:00', detections: 31 },
-];
-
-const mockJobs = [
-  { id: 'job-9a8f2', status: 'running', hash: 'e3b0c44298fc1c149afbf4c8996fb924', time: '2 min ago' },
-  { id: 'job-1b7c9', status: 'completed', hash: 'd41d8cd98f00b204e9800998ecf8427e', time: '15 min ago' },
-  { id: 'job-5f2a1', status: 'failed', hash: '098f6bcd4621d373cade4e832627b4f6', time: '1 hr ago' },
-];
-
 const Dashboard: React.FC = () => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['dashboardOverview'],
+    queryFn: async () => {
+      const res = await api.get('/dashboard/overview');
+      return res.data;
+    },
+    refetchInterval: 5000, // Poll every 5s for live feel
+  });
+
+  if (isLoading) {
+    return <div className="text-cyber-accent font-mono p-6">LOADING LIVE DATA...</div>;
+  }
+  if (error) {
+    return <div className="text-cyber-alert font-mono p-6">ERROR LOADING DATA</div>;
+  }
+
+  const {
+    active_sandboxes = 0,
+    total_threats = 0,
+    stored_artifacts = 0,
+    recent_activity = [],
+    chart_data = []
+  } = data || {};
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="ACTIVE SANDBOXES" value="8" icon={Cpu} color="accent" />
-        <StatCard title="THREATS DETECTED" value="1,204" icon={ShieldAlert} trend={{ value: 12, isUp: true }} color="alert" />
-        <StatCard title="STORED ARTIFACTS" value="8,942" icon={Database} color="default" />
-        <StatCard title="SYSTEM LOAD" value="42%" icon={Activity} trend={{ value: 5, isUp: false }} color="green" />
+        <StatCard title="ACTIVE SANDBOXES" value={active_sandboxes.toString()} icon={Cpu} color="accent" />
+        <StatCard title="THREATS DETECTED" value={total_threats.toString()} icon={ShieldAlert} color="alert" />
+        <StatCard title="STORED ARTIFACTS" value={stored_artifacts.toString()} icon={Database} color="default" />
+        <StatCard title="SYSTEM LOAD" value="LIVE" icon={Activity} color="green" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -35,7 +44,7 @@ const Dashboard: React.FC = () => {
           <h3 className="text-gray-400 font-mono text-sm tracking-wider mb-6">DETECTION FREQUENCY (24H)</h3>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={mockChartData}>
+              <AreaChart data={chart_data}>
                 <defs>
                   <linearGradient id="colorDetections" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#ff7b72" stopOpacity={0.3} />
@@ -62,20 +71,22 @@ const Dashboard: React.FC = () => {
              <span className="text-xs bg-cyber-accent bg-opacity-20 text-cyber-accent px-2 py-1 rounded font-mono border border-cyber-accent">LIVE</span>
           </div>
           <div className="space-y-4">
-            {mockJobs.map(job => (
+            {recent_activity.length === 0 && <div className="text-gray-500 text-xs font-mono">No recent activity.</div>}
+            {recent_activity.map((job: any) => (
               <div key={job.id} className="p-3 border border-cyber-border rounded bg-cyber-dark flex flex-col space-y-2 hover:border-cyber-accent transition-colors cursor-pointer">
                 <div className="flex justify-between items-center">
-                  <span className="font-mono text-xs text-gray-300">{job.id}</span>
+                  <span className="font-mono text-xs text-gray-300">{job.id.substring(0, 8)}...</span>
                   <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
-                    job.status === 'running' ? 'text-cyber-accent border-cyber-accent bg-cyber-accent bg-opacity-10' :
+                    job.status === 'analyzing' ? 'text-cyber-accent border-cyber-accent bg-cyber-accent bg-opacity-10' :
                     job.status === 'completed' ? 'text-cyber-green border-cyber-green bg-cyber-green bg-opacity-10' :
-                    'text-cyber-alert border-cyber-alert bg-cyber-alert bg-opacity-10'
+                    job.status === 'failed' ? 'text-cyber-alert border-cyber-alert bg-cyber-alert bg-opacity-10' :
+                    'text-gray-400 border-gray-500 bg-gray-800'
                   }`}>
                     {job.status.toUpperCase()}
                   </span>
                 </div>
-                <div className="font-mono text-[10px] text-gray-500 truncate">{job.hash}</div>
-                <div className="text-right text-[10px] text-gray-500">{job.time}</div>
+                <div className="font-mono text-[10px] text-gray-500 truncate">{job.filename}</div>
+                <div className="text-right text-[10px] text-gray-500">{new Date(job.created_at).toLocaleTimeString()}</div>
               </div>
             ))}
           </div>

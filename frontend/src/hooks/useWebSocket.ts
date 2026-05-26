@@ -12,11 +12,13 @@ export const useWebSocket = (url: string) => {
   // without triggering a React re-render for every single event.
   const messageBuffer = useRef<any[]>([]);
   const rafRef = useRef<number | null>(null);
+  const reconnectTimeout = useRef<NodeJS.Timeout | null>(null);
+  const isUnmounted = useRef(false);
   
   const { user } = useAuth();
   
   const connect = useCallback(() => {
-    if (!user) return;
+    if (!user || !url) return;
     
     // In production, token should be passed securely, e.g. via ticket or wss headers
     const token = localStorage.getItem('access_token');
@@ -41,14 +43,21 @@ export const useWebSocket = (url: string) => {
     ws.current.onclose = () => {
       setIsConnected(false);
       console.log(`[WS] Disconnected from ${url}`);
-      // Auto reconnect
-      setTimeout(connect, 3000);
+      // Auto reconnect only if not unmounted
+      if (!isUnmounted.current) {
+        reconnectTimeout.current = setTimeout(connect, 3000);
+      }
     };
   }, [url, user]);
 
   useEffect(() => {
+    isUnmounted.current = false;
     connect();
     return () => {
+      isUnmounted.current = true;
+      if (reconnectTimeout.current) {
+        clearTimeout(reconnectTimeout.current);
+      }
       if (ws.current) {
         ws.current.close();
       }

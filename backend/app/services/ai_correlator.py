@@ -1,75 +1,37 @@
-import logging
-import asyncio
-from typing import List, Dict, Any
-from app.database.neo4j import get_neo4j_async_session
+def generate_ai_summary(risk_data, iocs, mitre_mappings, telemetry_events):
+    if risk_data["score"] < 15 and not mitre_mappings and not iocs:
+        return "No malicious runtime behavior observed. The file appears benign based on static and dynamic analysis."
 
-logger = logging.getLogger("ai_correlator")
-
-class AICorrelator:
-    """
-    Advanced AI correlation engine leveraging Graph topology and ML embeddings
-    to cluster malware families and detect behavioral anomalies.
-    """
+    summary_parts = []
     
-    @staticmethod
-    async def cluster_malware_families():
-        """
-        Runs the Node2Vec algorithm over the execution graph to generate 
-        embeddings for SandboxJobs, then clusters them using K-Means or Louvain.
-        (Simulated logic for architectural representation).
-        """
-        logger.info("Starting Graph ML malware family clustering...")
+    if risk_data["score"] >= 70:
+        summary_parts.append("CRITICAL THREAT DETECTED.")
+    elif risk_data["score"] >= 40:
+        summary_parts.append("SUSPICIOUS BEHAVIOR DETECTED.")
+    else:
+        summary_parts.append("LOW RISK BEHAVIOR OBSERVED.")
+
+    if mitre_mappings:
+        tactics = [m['name'] for m in mitre_mappings]
+        summary_parts.append(f"The sample exhibits {len(tactics)} distinct MITRE ATT&CK techniques, including: {', '.join(tactics[:3])}.")
+
+    network_events = [e for e in telemetry_events if e.get("type") in ("SOCKET_CONNECT", "DNS_QUERY")]
+    if network_events:
+        network_iocs = [ioc['value'] for ioc in iocs if ioc['type'] in ('ip', 'domain') and ioc['source'] == 'Runtime Telemetry']
+        if network_iocs:
+            summary_parts.append(f"Network activity was observed, communicating with endpoints (e.g., {network_iocs[0]}).")
+        else:
+            summary_parts.append("Network activity was observed during runtime execution.")
+
+    if any(evt.get("type") in ("PROCESS_CREATE", "EXECUTION") and "python " not in evt.get("data", {}).get("cmdline", "").lower() for evt in telemetry_events):
+        summary_parts.append("The sample actively spawned child processes during sandbox execution.")
         
-        # Example Neo4j Graph Data Science (GDS) query for Node2Vec
-        query = """
-        CALL gds.beta.node2vec.stream('executionGraph', {
-            embeddingDimension: 64,
-            walkLength: 80,
-            walksPerNode: 10,
-            iterations: 1,
-            returnDependencies: false
-        })
-        YIELD nodeId, embedding
-        RETURN gds.util.asNode(nodeId).job_id AS jobId, embedding
-        LIMIT 50
-        """
-        
-        try:
-            async with get_neo4j_async_session() as session:
-                # In a real cluster with GDS installed, this would return embeddings
-                # result = await session.run(query)
-                # ...
-                pass
-        except Exception as e:
-            logger.warning(f"Graph Data Science library not available or query failed: {e}")
-            
-    @staticmethod
-    async def detect_anomaly(job_id: str) -> Dict[str, Any]:
-        """
-        Analyzes a specific SandboxJob's execution tree against baseline
-        execution profiles to detect anomalous behavior (e.g. uncommon process injection).
-        """
-        logger.info(f"Running anomaly detection for job {job_id}")
-        
-        # Fetch the path shape (sequence of processes and connections)
-        query = """
-        MATCH path = (j:SandboxJob {job_id: $job_id})-[:SPAWNED_PROCESS*1..5]->(p:Process)-[:CONNECTED_TO]->(ip:IPAddress)
-        RETURN count(path) as path_count
-        """
-        try:
-            async with get_neo4j_async_session() as session:
-                result = await session.run(query, job_id=job_id)
-                record = await result.single()
-                path_count = record["path_count"] if record else 0
-                
-                # Mock anomaly detection logic based on path complexity
-                is_anomalous = path_count > 10 
-                return {
-                    "job_id": job_id,
-                    "anomaly_detected": is_anomalous,
-                    "confidence": 0.85 if is_anomalous else 0.2,
-                    "reason": "Highly complex network beaconing structure detected" if is_anomalous else "Behavior within normal bounds"
-                }
-        except Exception as e:
-            logger.error(f"Anomaly detection failed: {e}")
-            return {"job_id": job_id, "anomaly_detected": False, "error": str(e)}
+    for factor in risk_data["factors"]:
+        if "Ransomware" in factor:
+            summary_parts.append("WARNING: Ransomware-like indicators (e.g. shadow copy deletion) were confirmed in the telemetry stream.")
+            break
+
+    if not summary_parts:
+        return "Analysis completed. No significant behavioral indicators generated."
+
+    return " ".join(summary_parts)

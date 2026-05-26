@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 import uuid
 
@@ -25,7 +25,7 @@ def create_jti() -> str:
 def create_access_token(subject: str, scopes: Optional[list] = None, expires_delta: Optional[timedelta] = None) -> dict:
     if expires_delta is None:
         expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     exp = now + expires_delta
     jti = create_jti()
     to_encode = {"sub": subject, "iat": int(now.timestamp()), "exp": int(exp.timestamp()), "jti": jti}
@@ -38,7 +38,7 @@ def create_access_token(subject: str, scopes: Optional[list] = None, expires_del
 def create_refresh_token(subject: str, expires_days: Optional[int] = None) -> dict:
     if expires_days is None:
         expires_days = REFRESH_TOKEN_EXPIRE_DAYS
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     exp = now + timedelta(days=expires_days)
     jti = create_jti()
     to_encode = {"sub": subject, "iat": int(now.timestamp()), "exp": int(exp.timestamp()), "jti": jti, "type": "refresh"}

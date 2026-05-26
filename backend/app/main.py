@@ -15,6 +15,9 @@ from app.api.routes.graph import router as graph_router
 from app.api.routes.hunting import router as hunting_router
 from app.api.routes.integrations import router as integrations_router
 from app.api.routes.workspace import router as workspace_router
+from app.api.routes.dashboard import router as dashboard_router
+from app.api.routes.observability import router as observability_router
+from app.api.routes.threats import router as threats_router
 from app.database.mongodb import init_db
 import logging
 
@@ -67,6 +70,9 @@ app.include_router(graph_router)
 app.include_router(hunting_router)
 app.include_router(integrations_router)
 app.include_router(workspace_router)
+app.include_router(dashboard_router)
+app.include_router(observability_router)
+app.include_router(threats_router)
 
 @app.get("/")
 async def root():

@@ -1,12 +1,47 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Depends
+from app.database.mongodb import db
+from app.api.dependencies.auth import get_current_user
+from bson import ObjectId
 
 router = APIRouter()
 
 @router.get("/analysis/{file_id}")
-
-async def get_analysis(file_id: str):
-
+async def get_analysis(file_id: str, user=Depends(get_current_user)):
+    if file_id == "latest":
+        job = await db["sandbox_jobs"].find_one(sort=[("created_at", -1)])
+        if not job:
+            # Return a placeholder if the DB is completely empty
+            return {
+                "file_id": "latest",
+                "filename": "No file uploaded yet",
+                "status": "pending",
+                "risk_score": 0,
+                "ai_summary": "No analysis jobs found. Please upload a file in the Workspace.",
+                "yara_matches": [],
+                "mitre_tactics": [],
+                "metadata": {}
+            }
+    else:
+        job = await db["sandbox_jobs"].find_one({"job_id": file_id})
+        
+    if not job:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+        
     return {
-        "file_id": file_id,
-        "status": "completed"
+        "file_id": job.get("job_id"),
+        "filename": job.get("filename"),
+        "status": job.get("status"),
+        "risk_score": job.get("risk_score"),
+        "ai_summary": job.get("ai_summary", "Analysis in progress..."),
+        "yara_matches": job.get("yara_matches", []),
+        "mitre_tactics": job.get("mitre_tactics", []),
+        "iocs": job.get("iocs", []),
+        "metadata": {
+            "artifact_sha256": job.get("sha256"),
+            "md5": job.get("md5"),
+            "size": job.get("size"),
+            "entropy": job.get("entropy"),
+            **(job.get("metadata", {})),
+            **(job.get("extra", {}))
+        }
     }

@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Briefcase, FileText, Pin, Clock, Plus } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Briefcase, FileText, Pin, Clock, Plus, Upload } from 'lucide-react';
 import api from '../api/client';
 
 export const Workspace: React.FC = () => {
   const [cases, setCases] = useState<any[]>([]);
   const [selectedCase, setSelectedCase] = useState<any | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchCases();
@@ -28,6 +32,37 @@ export const Workspace: React.FC = () => {
     }
   };
 
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await api.post('/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      // Redirect to the new analysis
+      if (response.data.file_id) {
+        navigate(`/analysis/${response.data.file_id}`);
+      }
+    } catch (error) {
+      console.error('Upload failed', error);
+      alert('Upload failed. Please try again.');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div className="flex h-full bg-cyber-dark text-gray-300">
       {/* Case List Sidebar */}
@@ -37,13 +72,26 @@ export const Workspace: React.FC = () => {
             <Briefcase className="text-cyber-accent" />
             INVESTIGATIONS
           </h2>
-          <button className="p-2 bg-cyber-accent text-white rounded hover:bg-cyber-accent/80 transition-colors">
-             <Plus size={16} />
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            className="hidden" 
+          />
+          <button 
+            onClick={handleUploadClick}
+            disabled={isUploading}
+            className={`p-2 rounded transition-colors ${
+              isUploading ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-cyber-accent text-white hover:bg-cyber-accent/80'
+            }`}
+            title="Upload New Artifact"
+          >
+             {isUploading ? <Upload className="animate-pulse" size={16} /> : <Plus size={16} />}
           </button>
         </div>
 
         <div className="space-y-4">
-          {cases.map(c => (
+          {(cases || []).map(c => (
             <div 
               key={c._id}
               onClick={() => loadCase(c._id)}
@@ -87,8 +135,8 @@ export const Workspace: React.FC = () => {
                     PINNED ARTIFACTS
                  </h3>
                  <div className="space-y-2">
-                   {selectedCase.artifacts.length === 0 && <p className="text-sm text-gray-500">No artifacts pinned.</p>}
-                   {selectedCase.artifacts.map((art: any, i: number) => (
+                   {(selectedCase.artifacts || []).length === 0 && <p className="text-sm text-gray-500">No artifacts pinned.</p>}
+                   {(selectedCase.artifacts || []).map((art: any, i: number) => (
                       <div key={i} className="flex justify-between p-3 bg-cyber-panel border border-cyber-border rounded font-mono text-sm">
                          <span className="text-cyber-accent">{art.type.toUpperCase()}</span>
                          <span className="text-gray-300">{art.value}</span>
@@ -104,8 +152,8 @@ export const Workspace: React.FC = () => {
                     ANALYST NOTES
                  </h3>
                  <div className="space-y-4">
-                   {selectedCase.notes.length === 0 && <p className="text-sm text-gray-500">No notes yet.</p>}
-                   {selectedCase.notes.map((note: any, i: number) => (
+                   {(selectedCase.notes || []).length === 0 && <p className="text-sm text-gray-500">No notes yet.</p>}
+                   {(selectedCase.notes || []).map((note: any, i: number) => (
                       <div key={i} className="p-4 bg-cyber-panel/50 border border-cyber-border rounded">
                          <p className="text-gray-300 text-sm mb-3">{note.content}</p>
                          <div className="flex justify-between items-center text-xs font-mono text-gray-500">

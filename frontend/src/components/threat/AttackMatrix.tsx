@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Activity, ShieldAlert, Cpu } from 'lucide-react';
 import api from '../../api/client';
 
@@ -12,65 +12,24 @@ interface Tactic {
 interface Technique {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   active?: boolean;
+  frequency?: number;
 }
 
-const mockTactics: Tactic[] = [
-  {
-    id: "TA0001",
-    name: "Initial Access",
-    description: "The adversary is trying to get into your network.",
-    techniques: [
-      { id: "T1189", name: "Drive-by Compromise", description: "..." },
-      { id: "T1190", name: "Exploit Public-Facing Application", description: "..." },
-      { id: "T1566", name: "Phishing", description: "...", active: true }
-    ]
-  },
-  {
-    id: "TA0002",
-    name: "Execution",
-    description: "The adversary is trying to run malicious code.",
-    techniques: [
-      { id: "T1059", name: "Command and Scripting Interpreter", description: "...", active: true },
-      { id: "T1203", name: "Exploitation for Client Execution", description: "..." },
-      { id: "T1569", name: "System Services", description: "..." }
-    ]
-  },
-  {
-    id: "TA0003",
-    name: "Persistence",
-    description: "The adversary is trying to maintain their foothold.",
-    techniques: [
-      { id: "T1098", name: "Account Manipulation", description: "..." },
-      { id: "T1136", name: "Create Account", description: "..." },
-      { id: "T1543", name: "Create or Modify System Process", description: "...", active: true }
-    ]
-  },
-  {
-    id: "TA0004",
-    name: "Privilege Escalation",
-    description: "The adversary is trying to gain higher-level permissions.",
-    techniques: [
-      { id: "T1548", name: "Abuse Elevation Control Mechanism", description: "..." },
-      { id: "T1134", name: "Access Token Manipulation", description: "...", active: true },
-      { id: "T1055", name: "Process Injection", description: "..." }
-    ]
-  },
-  {
-    id: "TA0005",
-    name: "Defense Evasion",
-    description: "The adversary is trying to avoid being detected.",
-    techniques: [
-      { id: "T1140", name: "Deobfuscate/Decode Files or Information", description: "...", active: true },
-      { id: "T1070", name: "Indicator Removal", description: "..." },
-      { id: "T1036", name: "Masquerading", description: "..." }
-    ]
-  }
-];
-
 export const AttackMatrix: React.FC = () => {
-  const [tactics, setTactics] = useState<Tactic[]>(mockTactics);
+  const { data: tactics = [], isLoading, error } = useQuery({
+    queryKey: ['attackMatrix'],
+    queryFn: async () => {
+      const res = await api.get('/threats/matrix');
+      return res.data;
+    },
+    refetchInterval: 5000,
+  });
+
+  if (isLoading) return <div className="text-cyber-accent font-mono p-4">LOADING MATRIX...</div>;
+  if (error) return <div className="text-cyber-alert font-mono p-4">ERROR LOADING MATRIX</div>;
+  if (tactics.length === 0) return <div className="text-gray-500 font-mono p-4">No active threats detected.</div>;
   
   return (
     <div className="w-full h-full overflow-x-auto bg-cyber-dark text-gray-300 font-sans">
@@ -108,7 +67,10 @@ export const AttackMatrix: React.FC = () => {
                    <div className="flex justify-between items-center mt-2">
                       <span className="text-xs opacity-70 font-mono">{technique.id}</span>
                       {technique.active && (
-                         <Activity size={12} className="animate-pulse text-cyber-alert" />
+                         <div className="flex items-center space-x-2">
+                           {technique.frequency && <span className="text-[10px] font-mono text-cyber-alert bg-cyber-alert/20 px-1 rounded">x{technique.frequency}</span>}
+                           <Activity size={12} className="animate-pulse text-cyber-alert" />
+                         </div>
                       )}
                    </div>
                 </div>

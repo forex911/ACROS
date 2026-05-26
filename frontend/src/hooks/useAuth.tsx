@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/client';
 import type { User } from '../types';
 
@@ -13,28 +14,31 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const token = localStorage.getItem('access_token');
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('access_token');
-      if (token) {
-        try {
-          const res = await api.get('/auth/me');
-          setUser(res.data);
-        } catch (error) {
-          console.error("Auth check failed", error);
-        }
+  const { data: user = null, isLoading } = useQuery<User | null>({
+    queryKey: ['auth', 'me'],
+    queryFn: async () => {
+      const currentToken = localStorage.getItem('access_token');
+      if (!currentToken) return null;
+      try {
+        const res = await api.get('/auth/me');
+        return res.data;
+      } catch (error) {
+        console.error("Auth check failed", error);
+        throw error;
       }
-      setIsLoading(false);
-    };
-    checkAuth();
-  }, []);
+    },
+    enabled: !!token,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff
+    staleTime: 5 * 60 * 1000,
+  });
 
-  const login = (token: string, userData: User) => {
-    localStorage.setItem('access_token', token);
-    setUser(userData);
+  const login = (newToken: string, userData: User) => {
+    localStorage.setItem('access_token', newToken);
+    queryClient.setQueryData(['auth', 'me'], userData);
   };
 
   const logout = async () => {
@@ -44,11 +48,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error(e);
     }
     localStorage.removeItem('access_token');
-    setUser(null);
+    queryClient.setQueryData(['auth', 'me'], null);
+    queryClient.clear();
   };
 
+  const isAuthLoading = !!token && isLoading;
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading: isAuthLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
