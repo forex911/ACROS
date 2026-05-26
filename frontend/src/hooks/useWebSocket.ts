@@ -20,7 +20,7 @@ export const useWebSocket = (url: string) => {
     
     // In production, token should be passed securely, e.g. via ticket or wss headers
     const token = localStorage.getItem('access_token');
-    const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:6000'}${url}?token=${token}`;
+    const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:8000'}${url}?token=${token}`;
     
     ws.current = new WebSocket(wsUrl);
 

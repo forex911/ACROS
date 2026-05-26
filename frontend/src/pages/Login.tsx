@@ -11,20 +11,27 @@ export const Login: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const DEMO_USER = { username: 'admin', roles: ['admin', 'analyst'] };
+  const DEMO_TOKEN = 'demo-token-sentinel-ai';
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    try {
-      // Using x-www-form-urlencoded as required by FastAPI OAuth2PasswordRequestForm
-      const params = new URLSearchParams();
-      params.append('username', username);
-      params.append('password', password);
 
-      const res = await api.post('/auth/login', params, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    // ── Demo bypass (no backend required) ───────────────────────────────
+    if (username === 'admin' && password === 'sentinel123') {
+      login(DEMO_TOKEN, DEMO_USER);
+      navigate('/');
+      return;
+    }
+    // ────────────────────────────────────────────────────────────────────
+
+    try {
+      const res = await api.post('/auth/login', {
+        username,
+        password
       });
 
-      // Fetch user details immediately after token grant
       const { access_token } = res.data;
       const userRes = await api.get('/auth/me', {
         headers: { Authorization: `Bearer ${access_token}` }
@@ -33,7 +40,7 @@ export const Login: React.FC = () => {
       login(access_token, userRes.data);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Authentication failed');
+      setError(err.response?.data?.detail || 'Authentication failed. Use admin / sentinel123 for demo.');
     }
   };
 
@@ -96,6 +103,18 @@ export const Login: React.FC = () => {
             INITIALIZE_SESSION
           </button>
         </form>
+
+        {/* Demo credentials hint */}
+        <div className="mt-6 p-3 bg-cyber-accent/5 border border-cyber-accent/30 rounded text-center">
+          <p className="text-xs font-mono text-gray-500 mb-1">DEMO ACCESS</p>
+          <p className="text-xs font-mono">
+            <span className="text-gray-400">user: </span>
+            <span className="text-cyber-accent font-bold">admin</span>
+            <span className="text-gray-600 mx-2">|</span>
+            <span className="text-gray-400">pass: </span>
+            <span className="text-cyber-accent font-bold">sentinel123</span>
+          </p>
+        </div>
       </div>
     </div>
   );
