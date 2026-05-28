@@ -21,7 +21,7 @@ def analyze_hashes(file_path: str):
         data = f.read()
     
     sha256 = hashlib.sha256(data).hexdigest()
-    md5 = hashlib.md5(data).hexdigest()
+    md5 = hashlib.md5(data, usedforsecurity=False).hexdigest()
     entropy = compute_entropy(data)
     size = len(data)
     mime = mimetypes.guess_type(file_path)[0] or "application/octet-stream"

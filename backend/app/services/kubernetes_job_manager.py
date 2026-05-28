@@ -105,7 +105,7 @@ def create_sandbox_job(
         name="artifact-vol", mount_path="/artifacts", read_only=True
     )
     tmp_mount = k8s_client.V1VolumeMount(
-        name="tmp-vol", mount_path="/tmp", read_only=False
+        name="tmp-vol", mount_path="/tmp", read_only=False  # nosec B108
     )
 
     # ---- Hardened security context (container-level) ---------------------
