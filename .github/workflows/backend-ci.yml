@@ -70,6 +70,9 @@ jobs:
       - name: Trigger ArgoCD sync (optional)
         run: |
           echo "Triggering ArgoCD sync..."
-          # Example using ArgoCD API token stored in secrets
+          if [ -z "${{ secrets.ARGOCD_SERVER }}" ]; then
+            echo "ArgoCD secrets not configured. Skipping deploy."
+            exit 0
+          fi
           curl -k -s -X POST "${{ secrets.ARGOCD_SERVER }}/api/v1/applications/sentinel-backend/sync" \
-            -H "Authorization: Bearer ${{ secrets.ARGOCD_TOKEN }}"
+            -H "Authorization: Bearer ${{ secrets.ARGOCD_TOKEN }}" || true
