@@ -27,6 +27,6 @@ jobs:
         run: |
           kustomize build deployment/kubernetes/k8s/overlays/dev | kubeconform -summary -strict
       - name: Kube-score
-        uses:zegl/kube-score-action@v1
+        uses: zegl/kube-score-action@v1
         with:
           args: kustomize build deployment/kubernetes/k8s/overlays/dev
