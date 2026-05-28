@@ -39,7 +39,7 @@ export const DashboardLayout: React.FC = () => {
                 to={item.path}
                 className={`flex items-center px-4 py-3 rounded font-mono text-sm transition-colors ${
                   isActive 
-                    ? 'bg-cyber-accent bg-opacity-10 text-cyber-accent border-l-2 border-cyber-accent' 
+                    ? 'bg-cyber-accent/10 text-cyber-accent border-l-2 border-cyber-accent' 
                     : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
                 }`}
               >
@@ -64,7 +64,7 @@ export const DashboardLayout: React.FC = () => {
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center px-4 py-2 text-sm text-cyber-alert hover:bg-cyber-alert hover:bg-opacity-10 rounded transition-colors font-mono"
+            className="w-full flex items-center px-4 py-2 text-sm text-cyber-alert hover:bg-cyber-alert/10 rounded transition-colors font-mono"
           >
             <LogOut className="w-4 h-4 mr-3" />
             DISCONNECT

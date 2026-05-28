@@ -5,8 +5,12 @@ import json
 async def check_mongo():
     client = AsyncIOMotorClient("mongodb://localhost:27017/")
     db = client["sentinel_ai"]
-    job = await db.sandbox_jobs.find_one({"job_id": "0d423767-ced9-443c-b575-bca82e8c6701"})
+    job = await db["sandbox_jobs"].find_one({"job_id": "0d423767-ced9-443c-b575-bca82e8c6701"})
     
+    if not job:
+        print("Job not found.")
+        return
+
     # Simulate what analysis.py does
     res = {
         "file_id": job.get("job_id"),

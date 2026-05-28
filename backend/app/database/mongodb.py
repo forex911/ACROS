@@ -17,10 +17,10 @@ async def init_db():
         await db.users.create_index("username", unique=True)
         
         # Jobs collection
-        await db.jobs.create_index("job_id", unique=True)
-        await db.jobs.create_index("status")
+        await db["sandbox_jobs"].create_index("job_id", unique=True)
+        await db["sandbox_jobs"].create_index("status")
         # 30-day TTL for completed/failed jobs
-        await db.jobs.create_index("created_at", expireAfterSeconds=2592000)
+        await db["sandbox_jobs"].create_index("created_at", expireAfterSeconds=2592000)
         
         # Reports collection
         await db.reports.create_index("report_id", unique=True)

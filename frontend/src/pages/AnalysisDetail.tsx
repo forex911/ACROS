@@ -21,7 +21,41 @@ const AnalysisDetail: React.FC = () => {
   const actualJobId = analysis?.file_id || jobId;
   const { messages, isConnected } = useWebSocket(actualJobId !== 'latest' ? `/ws/jobs/${actualJobId}/telemetry` : '');
 
-  if (isLoading) return <div className="text-cyber-accent p-6 font-mono">LOADING ANALYSIS...</div>;
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8 font-mono">
+        <div className="relative w-24 h-24 mb-8">
+           <div className="absolute inset-0 border-t-2 border-cyber-accent rounded-full animate-spin"></div>
+           <div className="absolute inset-2 border-r-2 border-cyber-green rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+           <div className="absolute inset-4 border-b-2 border-cyber-alert rounded-full animate-spin" style={{ animationDuration: '2s' }}></div>
+           <div className="absolute inset-0 flex items-center justify-center text-cyber-accent">
+              <Activity className="w-6 h-6 animate-pulse" />
+           </div>
+        </div>
+        <div className="text-cyber-accent text-lg tracking-widest animate-pulse mb-6">INITIALIZING ANALYSIS</div>
+        
+        <div className="w-full max-w-2xl bg-[#050505] border border-cyber-border rounded p-4 text-xs text-green-500 font-mono shadow-[0_0_10px_rgba(0,255,0,0.1)]">
+           <div className="flex justify-between items-center mb-2 border-b border-gray-800 pb-2">
+             <span className="text-gray-500">DEBUG CONSOLE</span>
+             <span className="flex space-x-1">
+               <span className="w-2 h-2 bg-gray-700 rounded-full"></span>
+               <span className="w-2 h-2 bg-gray-700 rounded-full"></span>
+               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+             </span>
+           </div>
+           <div className="space-y-1 opacity-80 h-32 overflow-hidden flex flex-col justify-end">
+             <div className="text-gray-500">[0.000s] SYSTEM: Booting sandbox orchestrator...</div>
+             <div className="text-gray-500">[0.125s] SYSTEM: Uploading artifact to secure vault...</div>
+             <div>[0.450s] INIT: Spawning isolation microVM...</div>
+             <div>[0.820s] NETWORK: Applying zero-trust egress filters...</div>
+             <div>[1.050s] STATIC: Extracting hashes and metadata...</div>
+             <div>[1.240s] RUNTIME: Hooking syscalls (eBPF)...</div>
+             <div className="text-cyber-accent animate-pulse">[1.500s] AWAITING ANALYSIS COMPLETION_</div>
+           </div>
+        </div>
+      </div>
+    );
+  }
   if (error) return <div className="text-cyber-alert p-6 font-mono">ERROR LOADING ANALYSIS</div>;
 
   return (
@@ -43,8 +77,8 @@ const AnalysisDetail: React.FC = () => {
           <div className="text-center">
             <div className="text-xs font-mono text-gray-500 mb-1">STATUS</div>
             <div className={`text-sm font-mono px-2 py-1 rounded border ${
-              analysis?.status === 'analyzing' ? 'bg-cyber-accent text-cyber-accent border-cyber-accent bg-opacity-20' :
-              analysis?.status === 'completed' ? 'bg-cyber-green text-cyber-green border-cyber-green bg-opacity-20' :
+              analysis?.status === 'analyzing' ? 'bg-cyber-accent/20 text-cyber-accent border-cyber-accent' :
+              analysis?.status === 'completed' ? 'bg-cyber-green/20 text-cyber-green border-cyber-green' :
               'bg-gray-800 text-gray-400 border-gray-500'
             }`}>
               {analysis?.status?.toUpperCase() || 'UNKNOWN'}
@@ -106,6 +140,8 @@ const AnalysisDetail: React.FC = () => {
                 </div>
                 <div>
                   <div className="text-gray-500 text-xs">SIZE</div>
+                  <div className="text-gray-200 text-xs">{analysis?.metadata?.size_bytes ? `${(analysis.metadata.size_bytes / 1024).toFixed(2)} KB` : 'N/A'}</div>
+                </div>
                 <div>
                   <div className="text-gray-500 text-xs">MD5</div>
                   <div className="text-cyber-accent break-all text-xs">{analysis?.metadata?.md5 || 'N/A'}</div>
@@ -187,8 +223,8 @@ const AnalysisDetail: React.FC = () => {
                         <td className="py-3 px-3 text-gray-500 text-xs">{ioc.source}</td>
                         <td className="py-3 px-3 text-right">
                            <span className={`px-2 py-1 rounded text-xs ${
-                             ioc.confidence === 'High' ? 'bg-cyber-alert bg-opacity-20 text-cyber-alert' :
-                             ioc.confidence === 'Medium' ? 'bg-orange-500 bg-opacity-20 text-orange-500' :
+                             ioc.confidence === 'High' ? 'bg-cyber-alert/20 text-cyber-alert' :
+                             ioc.confidence === 'Medium' ? 'bg-orange-500/20 text-orange-500' :
                              'bg-gray-800 text-gray-400'
                            }`}>
                              {ioc.confidence || 'Medium'}

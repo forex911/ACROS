@@ -19,12 +19,15 @@ async def _is_token_revoked(jti: str) -> bool:
     return val is not None
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
+async def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
     # Support API key header as alternative auth mechanism
-    def _header_name():
-        return API_KEY_HEADER
+    api_key = request.headers.get(API_KEY_HEADER)
+    if api_key:
+        user = await users.find_one({"api_keys.key": api_key}, projection={"_id": False})
+        if not user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key")
+        return user
 
-    # FastAPI cannot access raw headers here, so credentials may be None when using API Key middleware
     if not credentials:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     token = credentials.credentials

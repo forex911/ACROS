@@ -65,4 +65,6 @@ black
 flake8
 isort
 
-gunicornpefile 
+gunicorn
+pefile
+neo4j

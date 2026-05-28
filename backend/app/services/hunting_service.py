@@ -20,7 +20,7 @@ class HuntingService:
         
         # 1. Search MongoDB for jobs associated with this hash/keyword
         if db is not None:
-            cursor = db.jobs.find({
+            cursor = db["sandbox_jobs"].find({
                 "$or": [
                     {"sha256": query},
                     {"filename": {"$regex": query, "$options": "i"}},

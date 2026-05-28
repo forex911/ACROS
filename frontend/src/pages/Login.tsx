@@ -48,7 +48,7 @@ export const Login: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-cyber-dark">
       <div className="cyber-panel p-8 w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-cyber-accent bg-opacity-10 rounded-full flex items-center justify-center mb-4 border border-cyber-accent shadow-[0_0_15px_rgba(88,166,255,0.3)]">
+          <div className="w-16 h-16 bg-cyber-accent/10 rounded-full flex items-center justify-center mb-4 border border-cyber-accent shadow-[0_0_15px_rgba(88,166,255,0.3)]">
             <Lock className="w-8 h-8 text-cyber-accent" />
           </div>
           <h2 className="text-2xl font-bold text-gray-100 font-mono tracking-widest">SENTINEL_AI</h2>
@@ -56,7 +56,7 @@ export const Login: React.FC = () => {
         </div>
 
         {error && (
-          <div className="bg-cyber-alert bg-opacity-20 border border-cyber-alert text-cyber-alert px-4 py-2 rounded mb-4 text-sm font-mono">
+          <div className="bg-cyber-alert/20 border border-cyber-alert text-cyber-alert px-4 py-2 rounded mb-4 text-sm font-mono">
             [ERROR]: {error}
           </div>
         )}

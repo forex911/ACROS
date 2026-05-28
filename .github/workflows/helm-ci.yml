@@ -20,13 +20,14 @@ jobs:
           curl -sSfLo kubeconform https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64
           chmod +x kubeconform && sudo mv kubeconform /usr/local/bin/
       - name: Lint Helm chart
-        uses: deliverybot/helm-docs@v1
-        with:
-          args: lint charts/sentinel-platform
+        run: helm lint charts/sentinel-platform
       - name: Kubeconform validate manifests
         run: |
           kustomize build deployment/kubernetes/k8s/overlays/dev | kubeconform -summary -strict
-      - name: Kube-score
+      - name: Generate manifests
+        run: kustomize build deployment/kubernetes/k8s/overlays/dev > manifests.yaml
+          
+      - name: Kube-score Action
         uses: zegl/kube-score-action@v1
         with:
-          args: kustomize build deployment/kubernetes/k8s/overlays/dev
+          manifests: manifests.yaml

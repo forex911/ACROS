@@ -5,8 +5,9 @@ load_dotenv()
 
 MONGO_URI = os.getenv("MONGO_URI")
 
-UPLOAD_DIR = "uploads"
-REPORT_DIR = "reports"
+import tempfile
+UPLOAD_DIR = os.path.join(tempfile.gettempdir(), "sentinel_uploads")
+REPORT_DIR = os.path.join(tempfile.gettempdir(), "sentinel_reports")
 
 ALLOWED_EXTENSIONS = [
     ".py",

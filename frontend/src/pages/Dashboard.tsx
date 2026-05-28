@@ -68,7 +68,7 @@ const Dashboard: React.FC = () => {
         <div className="cyber-panel p-6">
           <div className="flex justify-between items-center mb-6">
              <h3 className="text-gray-400 font-mono text-sm tracking-wider">RECENT ACTIVITY</h3>
-             <span className="text-xs bg-cyber-accent bg-opacity-20 text-cyber-accent px-2 py-1 rounded font-mono border border-cyber-accent">LIVE</span>
+             <span className="text-xs bg-cyber-accent/20 text-cyber-accent px-2 py-1 rounded font-mono border border-cyber-accent">LIVE</span>
           </div>
           <div className="space-y-4">
             {recent_activity.length === 0 && <div className="text-gray-500 text-xs font-mono">No recent activity.</div>}
@@ -77,9 +77,9 @@ const Dashboard: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <span className="font-mono text-xs text-gray-300">{job.id.substring(0, 8)}...</span>
                   <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
-                    job.status === 'analyzing' ? 'text-cyber-accent border-cyber-accent bg-cyber-accent bg-opacity-10' :
-                    job.status === 'completed' ? 'text-cyber-green border-cyber-green bg-cyber-green bg-opacity-10' :
-                    job.status === 'failed' ? 'text-cyber-alert border-cyber-alert bg-cyber-alert bg-opacity-10' :
+                    job.status === 'analyzing' ? 'text-cyber-accent border-cyber-accent bg-cyber-accent/10' :
+                    job.status === 'completed' ? 'text-cyber-green border-cyber-green bg-cyber-green/10' :
+                    job.status === 'failed' ? 'text-cyber-alert border-cyber-alert bg-cyber-alert/10' :
                     'text-gray-400 border-gray-500 bg-gray-800'
                   }`}>
                     {job.status.toUpperCase()}

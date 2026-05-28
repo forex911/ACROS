@@ -34,7 +34,7 @@ async def login(payload: LoginRequest, response: Response):
 
     # Store refresh JTI in Redis for revocation tracking.
     # Key: refresh:{jti} → username, TTL = token lifetime
-    ttl = refresh['expires_at'] - int(datetime.utcnow().timestamp())
+    ttl = refresh['expires_at'] - int(time.time())
     await redis_client.set(f"refresh:{refresh['jti']}", payload.username, ex=max(ttl, 1))
 
     # Send refresh token as HttpOnly secure cookie — never accessible to JS
@@ -96,7 +96,7 @@ async def refresh(request: Request, response: Response, refresh_token: str = Non
     new_access = create_access_token(subject=username, scopes=user.get('roles', []) if user else [])
     new_refresh = create_refresh_token(subject=username)
 
-    ttl = new_refresh['expires_at'] - int(datetime.utcnow().timestamp())
+    ttl = new_refresh['expires_at'] - int(time.time())
     await redis_client.set(f"refresh:{new_refresh['jti']}", username, ex=max(ttl, 1))
 
     response.set_cookie(
