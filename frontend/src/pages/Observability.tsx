@@ -1,12 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 import api from '../api/client';
-import { Activity, Server, Database, BarChart3 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { staggerContainer, fadeInUp, scaleIn } from '../components/ui/animations';
+import { Activity, Server, Database, Cpu, Zap, Clock } from 'lucide-react';
+import { LiveChart } from '../components/LiveChart';
+
+gsap.registerPlugin(useGSAP);
+
+/* ── Custom Tooltip ──────────────────────────────────────────── */
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload) return null;
+  return (
+    <div className="bg-[#000000] border border-[#ffffff] p-4 min-w-[180px]">
+      <div className="text-[10px] font-mono font-bold text-[#888888] uppercase tracking-widest mb-3 border-b border-[#333333] pb-2">{label}</div>
+      {payload.map((entry: any, idx: number) => (
+        <div key={idx} className="flex items-center justify-between gap-6 py-1">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2" style={{ backgroundColor: entry.color }} />
+            <span className="text-[11px] font-mono text-[#888888] uppercase">{entry.name}</span>
+          </div>
+          <span className={`text-sm font-heading font-bold ${entry.value > 80 ? 'text-red-500' : entry.value > 50 ? 'text-[#ffffff]' : 'text-emerald-500'}`}>
+            {entry.value.toFixed(1)}%
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+/* ── Animated Dot (latest point pulses) ──────────────────────── */
+const PulseDot = ({ cx, cy, index, dataLength, color }: any) => {
+  if (index !== dataLength - 1) return null;
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={6} fill={color} opacity={0.3}>
+        <animate attributeName="r" from="6" to="14" dur="1.5s" repeatCount="indefinite" />
+        <animate attributeName="opacity" from="0.4" to="0" dur="1.5s" repeatCount="indefinite" />
+      </circle>
+      <circle cx={cx} cy={cy} r={4} fill={color} />
+      <circle cx={cx} cy={cy} r={2} fill="#000000" />
+    </g>
+  );
+};
 
 const Observability: React.FC = () => {
+  const container = useRef<HTMLDivElement>(null);
   const [cpuData, setCpuData] = useState<any[]>([]);
 
   const { data, isLoading } = useQuery({
@@ -15,7 +54,7 @@ const Observability: React.FC = () => {
       const res = await api.get('/observability/metrics');
       return res.data;
     },
-    refetchInterval: 2000, // Fetch every 2 seconds for live feeling
+    refetchInterval: 2000,
   });
 
   useEffect(() => {
@@ -24,198 +63,188 @@ const Observability: React.FC = () => {
         const timeStr = new Date(data.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         const newPoint = {
           time: timeStr,
-          worker_1: data.cpu_utilization,
-          worker_2: Math.max(0, data.cpu_utilization - 10 + Math.random() * 20),
-          worker_3: Math.max(0, data.cpu_utilization - 5 + Math.random() * 15),
+          Worker_1: data.cpu_utilization,
+          Worker_2: Math.max(0, data.cpu_utilization - 10 + Math.random() * 20),
+          Worker_3: Math.max(0, data.cpu_utilization - 5 + Math.random() * 15),
         };
         const newData = [...prev, newPoint];
-        if (newData.length > 20) newData.shift();
+        if (newData.length > 30) newData.shift();
         return newData;
       });
     }
   }, [data]);
+
+  useGSAP(() => {
+    if (container.current) {
+      gsap.fromTo(".gsap-obs-header",
+        { opacity: 0, y: -20 },
+        { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }
+      );
+      gsap.fromTo(".gsap-obs-card",
+        { opacity: 0, y: 30, scale: 0.95 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.8, stagger: 0.12, ease: "back.out(1.2)", delay: 0.15 }
+      );
+      gsap.fromTo(".gsap-obs-chart",
+        { opacity: 0, y: 40 },
+        { opacity: 1, y: 0, duration: 1, ease: "power3.out", delay: 0.4 }
+      );
+    }
+  }, { scope: container });
 
   const workerCount = data?.worker_count || 0;
   const totalWorkers = data?.total_workers || 0;
   const latency = data?.api_latency_ms || 0;
   const queueDepth = data?.redis_queue_depth || 0;
 
+  // Compute live averages for the sparkline mini-indicators
+  const avgCpu = useMemo(() => {
+    if (cpuData.length === 0) return 0;
+    return cpuData.reduce((sum, d) => sum + (d.Worker_1 || 0), 0) / cpuData.length;
+  }, [cpuData]);
+
+  const peakCpu = useMemo(() => {
+    if (cpuData.length === 0) return 0;
+    return Math.max(...cpuData.map(d => Math.max(d.Worker_1 || 0, d.Worker_2 || 0, d.Worker_3 || 0)));
+  }, [cpuData]);
+
+  const workers = [
+    { key: 'Worker_1', label: 'CORE-1', color: '#10b981', glowColor: '#10b981' },
+    { key: 'Worker_2', label: 'CORE-2', color: '#ffffff', glowColor: '#ffffff' },
+    { key: 'Worker_3', label: 'CORE-3', color: '#ef4444', glowColor: '#ef4444' },
+  ];
+
   return (
-    <motion.div
-      className="space-y-6 max-w-7xl mx-auto"
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-    >
+    <div ref={container} className="space-y-8 max-w-[1400px] mx-auto">
       {/* Header */}
-      <motion.div
-        className="flex items-center justify-between"
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.1 }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
-            <BarChart3 className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">System Metrics</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Real-time infrastructure observability</p>
+      <div className="gsap-obs-header flex items-center justify-between border-b border-[#333333] pb-6">
+        <div>
+          <h2 className="text-3xl font-heading font-bold tracking-tighter uppercase">Observability</h2>
+          <p className="text-xs font-mono text-[#666666] uppercase tracking-widest mt-1">System Telemetry • Real-Time</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-sm font-mono tracking-widest uppercase">
+            <span className="text-[#888888]">Status:</span>
+            <span className="text-emerald-500 font-bold border border-emerald-500 px-2 py-0.5">ONLINE</span>
           </div>
         </div>
-      </motion.div>
+      </div>
 
-      {/* Metric Cards — staggered entrance */}
-      <motion.div
-        className="grid grid-cols-1 md:grid-cols-3 gap-6"
-        variants={staggerContainer}
-        initial="hidden"
-        animate="visible"
-      >
+      {/* Metric Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {/* Worker Nodes */}
-        <motion.div
-          className="ui-panel p-6 flex flex-col items-center justify-center relative overflow-hidden"
-          variants={scaleIn}
-          whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-        >
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-green-50 rounded-full opacity-50"></div>
-          <motion.div
-            animate={{ rotate: [0, 5, -5, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4 z-10"
-          >
-            <Server className="w-6 h-6 text-green-600" />
-          </motion.div>
-          <motion.div
-            className="text-3xl font-bold text-gray-900 z-10"
-            key={workerCount}
-            initial={{ scale: 1.2, opacity: 0.5 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-          >
-            {isLoading ? '...' : `${workerCount}/${totalWorkers}`}
-          </motion.div>
-          <div className="text-sm text-gray-500 font-semibold uppercase tracking-wide mt-2 z-10">Worker Nodes</div>
-        </motion.div>
+        <div className="gsap-obs-card p-6 border border-[#333333] bg-[#000000] group hover:border-emerald-500/50 transition-colors">
+          <div className="flex items-center justify-between mb-4">
+            <Server className="w-4 h-4 text-[#666666] group-hover:text-emerald-500 transition-colors" />
+            <span className="text-[9px] font-mono font-bold text-[#444444] uppercase tracking-widest">Nodes</span>
+          </div>
+          <div className={`text-4xl font-heading font-bold tracking-tighter ${isLoading ? 'text-[#ffffff]' : workerCount < totalWorkers ? 'text-red-500' : 'text-emerald-500'}`}>
+            {isLoading ? '...' : workerCount}<span className="text-lg text-[#666666] font-normal">/{totalWorkers}</span>
+          </div>
+        </div>
 
         {/* API Latency */}
-        <motion.div
-          className="ui-panel p-6 flex flex-col items-center justify-center relative overflow-hidden"
-          variants={scaleIn}
-          whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-        >
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-50 rounded-full opacity-50"></div>
-          <motion.div
-            animate={{ y: [0, -3, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4 z-10"
-          >
-            <Activity className="w-6 h-6 text-blue-600" />
-          </motion.div>
-          <motion.div
-            className="text-3xl font-bold text-gray-900 z-10"
-            key={latency}
-            initial={{ scale: 1.2, opacity: 0.5 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-          >
-            {isLoading ? '...' : `${latency}ms`}
-          </motion.div>
-          <div className="text-sm text-gray-500 font-semibold uppercase tracking-wide mt-2 z-10">P99 Latency</div>
-        </motion.div>
-
-        {/* Redis Queue */}
-        <motion.div
-          className="ui-panel p-6 flex flex-col items-center justify-center relative overflow-hidden"
-          variants={scaleIn}
-          whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-        >
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-red-50 rounded-full opacity-50"></div>
-          <motion.div
-            animate={{ scale: [1, 1.08, 1] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-            className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mb-4 z-10"
-          >
-            <Database className="w-6 h-6 text-red-600" />
-          </motion.div>
-          <motion.div
-            className="text-3xl font-bold text-gray-900 z-10"
-            key={queueDepth}
-            initial={{ scale: 1.2, opacity: 0.5 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-          >
-            {isLoading ? '...' : queueDepth}
-          </motion.div>
-          <div className="text-sm text-gray-500 font-semibold uppercase tracking-wide mt-2 z-10">Queue Depth</div>
-        </motion.div>
-      </motion.div>
-
-      {/* Chart Panel */}
-      <motion.div
-        className="ui-panel p-6"
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-gray-900 font-bold text-lg">Worker CPU Utilization</h3>
-          <div className="flex items-center gap-4 text-xs font-semibold text-gray-500">
-            <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>Worker 1</div>
-            <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>Worker 2</div>
-            <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>Worker 3</div>
+        <div className="gsap-obs-card p-6 border border-[#333333] bg-[#000000] group hover:border-emerald-500/50 transition-colors">
+          <div className="flex items-center justify-between mb-4">
+            <Zap className="w-4 h-4 text-[#666666] group-hover:text-emerald-500 transition-colors" />
+            <span className="text-[9px] font-mono font-bold text-[#444444] uppercase tracking-widest">Latency</span>
+          </div>
+          <div className={`text-4xl font-heading font-bold tracking-tighter ${isLoading ? 'text-[#ffffff]' : latency > 200 ? 'text-red-500' : 'text-emerald-500'}`}>
+            {isLoading ? '...' : latency}<span className="text-lg text-[#666666] font-normal">ms</span>
           </div>
         </div>
-        <div className="h-[400px] bg-white rounded-xl p-4 border border-gray-100" style={{ minWidth: 0, minHeight: 300 }}>
-          <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={200}>
-            <LineChart data={cpuData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-              <XAxis dataKey="time" stroke="#e5e7eb" tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 500 }} tickLine={false} axisLine={false} dy={10} />
-              <YAxis stroke="#e5e7eb" tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 500 }} tickLine={false} axisLine={false} dx={-10} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#ffffff', borderColor: '#f3f4f6', color: '#1f2937', borderRadius: '0.75rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}
-                itemStyle={{ fontWeight: 600 }}
-                labelStyle={{ color: '#6b7280', marginBottom: '0.25rem' }}
-              />
-              <Line
-                type="monotone"
-                dataKey="worker_1"
-                stroke="#3b82f6"
-                strokeWidth={3}
-                dot={false}
-                activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
-                isAnimationActive={true}
-                animationDuration={600}
-                animationEasing="ease-out"
-              />
-              <Line
-                type="monotone"
-                dataKey="worker_2"
-                stroke="#10b981"
-                strokeWidth={3}
-                dot={false}
-                activeDot={{ r: 6, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
-                isAnimationActive={true}
-                animationDuration={600}
-                animationEasing="ease-out"
-              />
-              <Line
-                type="monotone"
-                dataKey="worker_3"
-                stroke="#ef4444"
-                strokeWidth={3}
-                dot={false}
-                activeDot={{ r: 6, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 }}
-                isAnimationActive={true}
-                animationDuration={600}
-                animationEasing="ease-out"
-              />
-            </LineChart>
-          </ResponsiveContainer>
+
+        {/* Queue Depth */}
+        <div className="gsap-obs-card p-6 border border-[#333333] bg-[#000000] group hover:border-emerald-500/50 transition-colors">
+          <div className="flex items-center justify-between mb-4">
+            <Database className="w-4 h-4 text-[#666666] group-hover:text-emerald-500 transition-colors" />
+            <span className="text-[9px] font-mono font-bold text-[#444444] uppercase tracking-widest">Queue</span>
+          </div>
+          <div className={`text-4xl font-heading font-bold tracking-tighter ${isLoading ? 'text-[#ffffff]' : queueDepth > 50 ? 'text-red-500' : 'text-emerald-500'}`}>
+            {isLoading ? '...' : queueDepth}
+          </div>
         </div>
-      </motion.div>
-    </motion.div>
+
+        {/* Avg CPU */}
+        <div className="gsap-obs-card p-6 border border-[#333333] bg-[#000000] group hover:border-emerald-500/50 transition-colors">
+          <div className="flex items-center justify-between mb-4">
+            <Cpu className="w-4 h-4 text-[#666666] group-hover:text-emerald-500 transition-colors" />
+            <span className="text-[9px] font-mono font-bold text-[#444444] uppercase tracking-widest">Avg CPU</span>
+          </div>
+          <div className={`text-4xl font-heading font-bold tracking-tighter ${avgCpu > 80 ? 'text-red-500' : avgCpu > 50 ? 'text-[#ffffff]' : 'text-emerald-500'}`}>
+            {avgCpu.toFixed(1)}<span className="text-lg text-[#666666] font-normal">%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── CPU Utilization Chart ─────────────────────────────── */}
+      <div className="gsap-obs-chart border border-[#333333] bg-[#000000] overflow-hidden">
+        {/* Chart Header */}
+        <div className="flex items-center justify-between px-8 pt-8 pb-4">
+          <div>
+            <h3 className="font-heading font-bold text-lg tracking-widest uppercase text-[#ffffff]">CPU Utilization</h3>
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-2">
+                <Clock className="w-3 h-3 text-[#666666]" />
+                <span className="text-[10px] font-mono text-[#666666] uppercase tracking-widest">
+                  {cpuData.length > 0 ? `${cpuData.length} samples` : 'Collecting...'}
+                </span>
+              </div>
+              <span className="text-[10px] font-mono text-[#444444]">•</span>
+              <span className={`text-[10px] font-mono font-bold uppercase tracking-widest ${peakCpu > 80 ? 'text-red-500' : 'text-emerald-500'}`}>
+                PEAK: {peakCpu.toFixed(1)}%
+              </span>
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center gap-6">
+            {workers.map(w => (
+              <div key={w.key} className="flex items-center gap-2">
+                <div className="w-3 h-1" style={{ backgroundColor: w.color }} />
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest" style={{ color: w.color }}>{w.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Danger Zone Label */}
+        <div className="px-8">
+          <div className="h-px bg-gradient-to-r from-transparent via-[#333333] to-transparent" />
+        </div>
+
+        {/* Chart Body */}
+        <div className="px-4 pb-6 pt-2">
+          <LiveChart
+            data={cpuData}
+            series={workers}
+            height={420}
+            dangerThreshold={80}
+          />
+        </div>
+
+        {/* Live Stats Footer */}
+        <div className="border-t border-[#222222] px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            {cpuData.length > 0 && workers.map(w => {
+              const latest = cpuData[cpuData.length - 1]?.[w.key] || 0;
+              return (
+                <div key={w.key} className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: w.color }} />
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest" style={{ color: w.color }}>{w.label}</span>
+                  <span className={`text-sm font-heading font-bold ${latest > 80 ? 'text-red-500' : latest > 50 ? 'text-[#ffffff]' : 'text-emerald-500'}`}>
+                    {latest.toFixed(1)}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-2">
+            <Activity className="w-3 h-3 text-emerald-500 animate-pulse" />
+            <span className="text-[10px] font-mono font-bold text-emerald-500 uppercase tracking-widest">LIVE</span>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

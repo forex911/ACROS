@@ -1,85 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 @import "tailwindcss";
 
 @layer base {
   * {
     -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
   }
-  
+
+  /* Lenis smooth scroll prevents native smooth behavior */
+  html.lenis, html.lenis body {
+    height: auto;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
   body {
-    background-color: #f4f6f8;
-    color: #111827;
+    margin: 0;
+    padding: 0;
+    background: #000000;
+    color: #ffffff;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
   }
 
-  /* Smooth scrolling everywhere */
-  html {
-    scroll-behavior: smooth;
+  /* Extreme high-end wide font for massive display text */
+  h1, h2, h3, h4, h5, h6, .font-heading {
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: -0.03em;
   }
 
-  /* Cleaner scrollbars for light theme */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  /* Technical brutalist font for numbers, logs, metadata */
+  .font-mono {
+    font-family: 'Space Mono', monospace;
+    letter-spacing: -0.05em;
   }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 6px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
-  }
+
+  /* Minimal stark scrollbars (non-Lenis fallback elements) */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #333333; }
+  ::-webkit-scrollbar-thumb:hover { background: #ffffff; }
 }
 
 @layer components {
-  /* Replace cyber-panel with a modern soft card */
-  .ui-panel {
-    background-color: #ffffff;
-    border: 1px solid #f3f4f6;
-    border-radius: 1.25rem; /* Large rounded corners */
-    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  /* ─── Custom scrollbar for inner overflow areas ───────────── */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 2px;
+    height: 2px;
   }
-
-  /* Modern button styling */
-  .ui-button {
-    background-color: #c5f37d;
-    color: #111827;
-    font-weight: 600;
-    padding: 0.5rem 1rem;
-    border-radius: 0.75rem;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
   }
-  .ui-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(197, 243, 125, 0.4);
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #444444;
   }
-  .ui-button:active {
-    transform: scale(0.97);
-  }
-
-  /* Animated focus ring for inputs */
-  input:focus,
-  textarea:focus,
-  select:focus {
-    outline: none;
-    border-color: #c5f37d;
-    box-shadow: 0 0 0 3px rgba(197, 243, 125, 0.2);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: #ffffff;
   }
 }
-
-@layer utilities {
-  .glow-accent {
-    box-shadow: 0 0 12px rgba(197, 243, 125, 0.4);
-  }
-}
-

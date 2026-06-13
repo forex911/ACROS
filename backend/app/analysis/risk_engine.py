@@ -8,7 +8,8 @@ class RiskEngine:
         chains: List[BehaviorChain], 
         threat: ThreatClassification,
         mitre_tactics_count: int,
-        impact_score: int
+        impact_score: int,
+        ml_risk_score: float = 0.0
     ) -> RiskAssessment:
         
         # 1. Base scores out of 100
@@ -37,6 +38,11 @@ class RiskEngine:
         final_score = int(weighted_cap + weighted_chain + weighted_threat + weighted_mitre + confidence_mod)
         if not capabilities and not chains:
             final_score = min(final_score, 5)
+            
+        # 3.5. Incorporate ML Risk Score
+        # If the ML model detects high risk, don't let rule-based logic underestimate it
+        if ml_risk_score > final_score:
+            final_score = int(ml_risk_score)
             
         if final_score > 100:
             final_score = 100

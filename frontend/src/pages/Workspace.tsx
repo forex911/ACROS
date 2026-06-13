@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
+import Lenis from 'lenis';
 import { Briefcase, FileText, Pin, Plus, Upload, Search, ShieldAlert, Activity, ExternalLink } from 'lucide-react';
 import api from '../api/client';
-import { staggerContainer, fadeInUp } from '../components/ui/animations';
+
+gsap.registerPlugin(useGSAP);
 
 interface AnalysisJob {
   id: string;
@@ -14,12 +17,51 @@ interface AnalysisJob {
 }
 
 export const Workspace: React.FC = () => {
+  const container = useRef<HTMLDivElement>(null);
+  const detailContainer = useRef<HTMLDivElement>(null);
+  
   const [jobs, setJobs] = useState<AnalysisJob[]>([]);
   const [selectedJob, setSelectedJob] = useState<any | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+
+  const listScrollRef = useRef<HTMLDivElement>(null);
+  const detailScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Initialize Lenis for the left panel
+    let lenisList: Lenis | null = null;
+    if (listScrollRef.current) {
+      lenisList = new Lenis({
+        wrapper: listScrollRef.current,
+        content: listScrollRef.current.firstElementChild as HTMLElement,
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      });
+      const rafList = (time: number) => { lenisList?.raf(time); requestAnimationFrame(rafList); };
+      requestAnimationFrame(rafList);
+    }
+
+    // Initialize Lenis for the right panel
+    let lenisDetail: Lenis | null = null;
+    if (detailScrollRef.current) {
+      lenisDetail = new Lenis({
+        wrapper: detailScrollRef.current,
+        content: detailScrollRef.current.firstElementChild as HTMLElement,
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      });
+      const rafDetail = (time: number) => { lenisDetail?.raf(time); requestAnimationFrame(rafDetail); };
+      requestAnimationFrame(rafDetail);
+    }
+
+    return () => {
+      lenisList?.destroy();
+      lenisDetail?.destroy();
+    };
+  }, [selectedJob, jobs.length]);
 
   const fetchJobs = async () => {
     setIsLoadingJobs(true);
@@ -36,6 +78,28 @@ export const Workspace: React.FC = () => {
   useEffect(() => {
     fetchJobs();
   }, []);
+
+  useGSAP(() => {
+    if (!isLoadingJobs && jobs.length > 0) {
+      gsap.fromTo(".gsap-job-item",
+        { opacity: 0, x: -20 },
+        { opacity: 1, x: 0, duration: 0.6, stagger: 0.05, ease: "power2.out" }
+      );
+    }
+  }, { dependencies: [isLoadingJobs, jobs.length], scope: container });
+
+  useGSAP(() => {
+    if (selectedJob) {
+      gsap.fromTo(".gsap-detail-header",
+        { opacity: 0, y: -20 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }
+      );
+      gsap.fromTo(".gsap-detail-panel",
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power3.out" }
+      );
+    }
+  }, { dependencies: [selectedJob], scope: detailContainer });
 
   const loadJobDetail = async (jobId: string) => {
     try {
@@ -77,34 +141,12 @@ export const Workspace: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'text-gray-900 bg-[#c5f37d]/60';
-      case 'analyzing': return 'text-yellow-700 bg-yellow-100';
-      case 'failed': return 'text-red-700 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
-
-  const getRiskColor = (score: number) => {
-    if (score >= 70) return 'text-red-600';
-    if (score >= 40) return 'text-orange-500';
-    if (score > 0) return 'text-gray-900';
-    return 'text-gray-500';
-  };
-
   return (
-    <motion.div
-      className="flex h-[calc(100vh-8rem)] rounded-2xl bg-white border border-gray-100 overflow-hidden shadow-sm"
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-    >
-      {/* Job List Sidebar */}
-      <div className="w-[320px] bg-gray-50 border-r border-gray-100 flex flex-col">
-        <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-white">
-          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+    <div ref={container} className="flex h-[calc(100vh-88px-80px)] bg-[#000000] border border-[#333333] overflow-hidden">
+      {/* ── Job List Sidebar ───────────────────────────────────── */}
+      <div className="w-[340px] bg-[#000000] border-r border-[#333333] flex flex-col shrink-0 h-full">
+        <div className="p-6 border-b border-[#333333] flex items-center justify-between">
+          <h2 className="text-sm font-heading font-bold text-[#ffffff] uppercase tracking-widest">
             Investigations
           </h2>
           <input 
@@ -116,207 +158,191 @@ export const Workspace: React.FC = () => {
           <button 
             onClick={handleUploadClick}
             disabled={isUploading}
-            className={`p-2 rounded-xl transition-all ${
-              isUploading ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-900 text-white hover:bg-gray-800 hover:shadow-md'
+            className={`p-2 border transition-all ${
+              isUploading 
+                ? 'bg-[#111111] text-[#666666] border-[#333333] cursor-not-allowed' 
+                : 'bg-[#ffffff] text-[#000000] border-[#ffffff] hover:bg-[#000000] hover:text-[#ffffff]'
             }`}
             title="Upload New Artifact"
           >
              {isUploading ? (
-               <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
-                 <Upload size={18} />
-               </motion.div>
+               <div className="animate-spin w-4 h-4 border-2 border-black border-t-transparent rounded-full" />
              ) : (
-               <Plus size={18} />
+               <Plus size={16} />
              )}
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
-          {isLoadingJobs ? (
-            <motion.div className="flex items-center justify-center gap-2 text-gray-400 text-sm py-10" animate={{ opacity: [0.4, 0.8, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }}>
-              <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-              Scanning...
-            </motion.div>
+        <div ref={listScrollRef} className="flex-1 overflow-y-auto p-5 custom-scrollbar min-h-0" data-lenis-prevent>
+          <div className="flex flex-col min-h-full">
+            {isLoadingJobs ? (
+              <div className="flex items-center justify-center gap-4 text-[#888888] font-mono text-xs uppercase tracking-widest py-10">
+              <div className="w-4 h-4 border-2 border-[#333333] border-t-[#ffffff] rounded-full animate-spin" />
+              SCANNING...
+            </div>
           ) : jobs.length === 0 ? (
-            <div className="text-center py-12">
-              <Search className="w-10 h-10 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 font-medium text-sm mb-2">No artifacts found</p>
-              <p className="text-gray-400 text-xs">Upload a file using the + button</p>
+            <div className="text-center py-16 border border-dashed border-[#333333] m-2">
+              <Search className="w-6 h-6 text-[#444444] mx-auto mb-4" />
+              <p className="text-[#ffffff] font-heading font-bold text-sm uppercase tracking-widest mb-2">No artifacts</p>
+              <p className="text-[#666666] font-mono text-[10px] uppercase">Upload file to begin</p>
             </div>
           ) : (
             <div className="space-y-3">
               {jobs.map((job, i) => (
-                <motion.div 
+                <div 
                   key={job.id || i}
                   onClick={() => loadJobDetail(job.id)}
-                  className={`p-4 rounded-xl cursor-pointer transition-all duration-200 border ${
+                  className={`gsap-job-item p-4 cursor-pointer transition-all duration-200 border ${
                     selectedJob?.file_id === job.id 
-                      ? 'bg-white border-[#c5f37d] shadow-sm ring-1 ring-[#c5f37d]' 
-                      : 'bg-white border-transparent shadow-sm hover:border-gray-200'
+                      ? 'bg-[#111111] border-[#ffffff]' 
+                      : 'bg-[#000000] border-[#333333] hover:border-[#888888]'
                   }`}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: i * 0.05 }}
-                  whileHover={{ y: -2 }}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-gray-900 text-sm truncate flex-1 mr-2">{job.filename}</h3>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${getStatusColor(job.status)}`}>
-                      {job.status?.toUpperCase()}
+                    <h3 className="font-bold text-[#ffffff] text-sm truncate flex-1 mr-4">{job.filename}</h3>
+                    <span className={`text-[10px] font-mono font-bold px-2 py-1 uppercase tracking-widest border ${
+                      job.status === 'completed' ? 'border-[#ffffff] text-[#000000] bg-[#ffffff]' :
+                      job.status === 'analyzing' ? 'border-[#ffffff] text-[#ffffff] bg-transparent' :
+                      'border-[#666666] text-[#666666] bg-transparent'
+                    }`}>
+                      {job.status}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span className="font-mono text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-400">{job.id.substring(0, 8)}</span>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-mono text-[#888888]">{job.id.substring(0, 8)}</span>
                     <div className="flex items-center gap-3">
                       {job.risk_score > 0 && (
-                        <span className={`font-bold ${getRiskColor(job.risk_score)}`}>
-                          Risk: {job.risk_score}
+                        <span className={`font-mono font-bold ${job.risk_score >= 50 ? 'text-red-500' : 'text-emerald-500'}`}>
+                          RISK: {job.risk_score}
                         </span>
                       )}
                     </div>
                   </div>
-                </motion.div>
+                </div>
               ))}
+            </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Detail Area ────────────────────────────────────────── */}
+      <div ref={detailScrollRef} className="flex-1 bg-[#000000] relative h-full overflow-y-auto custom-scrollbar min-h-0" data-lenis-prevent>
+        <div className="min-h-full flex flex-col">
+          {selectedJob ? (
+          <div key={selectedJob.file_id} className="p-10 max-w-5xl mx-auto">
+            {/* Header */}
+            <div className="gsap-detail-header flex items-start justify-between mb-10 pb-8 border-b border-[#333333]">
+              <div>
+                <h1 className="text-4xl font-heading font-black text-[#ffffff] mb-3 tracking-tighter uppercase">{selectedJob.filename}</h1>
+                <p className="text-[#888888] font-mono text-xs uppercase tracking-widest">ID: {selectedJob.file_id}</p>
+              </div>
+              <div className="flex items-center gap-10">
+                <div className="text-right border-r border-[#333333] pr-10">
+                  <div className="text-[10px] font-mono font-bold text-[#888888] mb-2 uppercase tracking-widest">Risk Score</div>
+                  <div className={`text-5xl font-heading font-black tracking-tighter ${
+                    (selectedJob.risk_score || 0) >= 50 ? 'text-red-500' : 'text-emerald-500'
+                  }`}>
+                    {selectedJob.risk_score || 0}
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate(`/analysis/${selectedJob.file_id}`)}
+                  className="flex items-center gap-3 px-6 py-4 bg-[#ffffff] text-[#000000] font-heading font-bold text-sm uppercase tracking-widest hover:bg-[#000000] hover:text-[#ffffff] border border-[#ffffff] transition-colors"
+                >
+                  <ExternalLink size={16} />
+                  FULL REPORT
+                </button>
+              </div>
+            </div>
+
+            {/* Content Grid */}
+            <div className="grid grid-cols-2 gap-8">
+              {/* AI Summary */}
+              <div className="gsap-detail-panel col-span-2 p-8 border border-[#333333] bg-[#000000]">
+                <h3 className="text-sm font-heading font-bold uppercase tracking-widest text-[#ffffff] mb-6 flex items-center gap-3">
+                  <Activity size={18} />
+                  AI Threat Summary
+                </h3>
+                <p className="text-[#cccccc] text-sm leading-relaxed font-sans max-w-4xl">
+                  {selectedJob.ai_summary || 'ANALYSIS IN PROGRESS...'}
+                </p>
+              </div>
+
+              {/* MITRE Tactics */}
+              <div className="gsap-detail-panel p-8 border border-[#333333] bg-[#000000]">
+                <h3 className="text-sm font-heading font-bold uppercase tracking-widest text-[#ffffff] mb-6 flex items-center gap-3">
+                  <ShieldAlert size={18} />
+                  MITRE ATT&CK
+                </h3>
+                <div className="space-y-3">
+                  {(selectedJob.mitre_tactics || []).length === 0 ? (
+                    <p className="text-xs font-mono text-[#666666] uppercase">No tactics detected.</p>
+                  ) : (
+                    selectedJob.mitre_tactics.map((t: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between px-4 py-3 border border-[#222222] bg-[#111111]">
+                        <span className="text-[#ffffff] font-mono font-bold text-xs">{t.id}</span>
+                        <span className="text-[#888888] text-sm font-sans">{t.name}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* File Metadata */}
+              <div className="gsap-detail-panel p-8 border border-[#333333] bg-[#000000]">
+                <h3 className="text-sm font-heading font-bold uppercase tracking-widest text-[#ffffff] mb-6 flex items-center gap-3">
+                  <FileText size={18} />
+                  File Metadata
+                </h3>
+                <div className="space-y-5">
+                  {[
+                    { label: 'SHA256', value: selectedJob.metadata?.artifact_sha256 },
+                    { label: 'MD5', value: selectedJob.metadata?.md5 },
+                    { label: 'Size', value: selectedJob.metadata?.size ? `${(selectedJob.metadata.size / 1024).toFixed(2)} KB` : null },
+                    { label: 'Entropy', value: selectedJob.metadata?.entropy?.toFixed(2) },
+                  ].map((item, i) => (
+                    <div key={item.label} className="flex flex-col">
+                      <span className="text-[#666666] text-[10px] font-mono font-bold uppercase tracking-widest mb-1.5">{item.label}</span>
+                      <span className="text-[#ffffff] break-all font-mono text-xs">
+                        {item.value || 'N/A'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* IOCs */}
+              {(selectedJob.iocs || []).length > 0 && (
+                <div className="gsap-detail-panel col-span-2 p-8 border border-[#333333] bg-[#000000]">
+                  <h3 className="text-sm font-heading font-bold uppercase tracking-widest text-[#ffffff] mb-6 flex items-center gap-3">
+                    <Pin size={18} />
+                    Indicators of Compromise
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {selectedJob.iocs.map((ioc: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between p-4 border border-[#222222] bg-[#111111]">
+                        <span className="text-[#ffffff] font-mono font-bold text-[10px] uppercase tracking-widest">{ioc.type}</span>
+                        <span className="text-[#888888] truncate ml-4 font-mono text-xs">{ioc.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="w-24 h-24 border border-[#333333] flex items-center justify-center mb-6">
+                <Search className="w-10 h-10 text-[#666666]" />
+              </div>
+              <span className="text-2xl font-heading font-bold text-[#ffffff] mb-2 tracking-widest uppercase">No Selection</span>
+              <span className="text-xs font-mono text-[#666666] uppercase">Select item or upload artifact</span>
             </div>
           )}
         </div>
       </div>
-
-      {/* Detail Area */}
-      <div className="flex-1 overflow-y-auto bg-gray-50">
-        <AnimatePresence mode="wait">
-          {selectedJob ? (
-            <motion.div
-              key={selectedJob.file_id}
-              className="p-8"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-            >
-              {/* Header */}
-              <div className="flex items-start justify-between mb-8 pb-6 border-b border-gray-200">
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-2">{selectedJob.filename}</h1>
-                  <p className="text-gray-400 font-mono text-xs bg-white px-2 py-1 rounded inline-block border border-gray-100">ID: {selectedJob.file_id}</p>
-                </div>
-                <div className="flex items-center gap-6">
-                  <motion.div className="text-right" initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}>
-                    <div className="text-xs font-semibold text-gray-400 mb-1 uppercase">Risk Score</div>
-                    <div className={`text-3xl font-bold ${getRiskColor(selectedJob.risk_score || 0)}`}>
-                      {selectedJob.risk_score || 0}
-                    </div>
-                  </motion.div>
-                  <motion.button
-                    onClick={() => navigate(`/analysis/${selectedJob.file_id}`)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white rounded-xl font-medium text-sm hover:bg-gray-800 transition-colors shadow-sm"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <ExternalLink size={16} />
-                    Full Report
-                  </motion.button>
-                </div>
-              </div>
-
-              {/* Content Grid */}
-              <div className="grid grid-cols-2 gap-6">
-                {/* AI Summary */}
-                <motion.div className="col-span-2 ui-panel p-6" variants={fadeInUp}>
-                  <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <div className="w-6 h-6 rounded bg-[#c5f37d]/30 flex items-center justify-center text-[#7fb827]">
-                      <Activity size={14} />
-                    </div>
-                    AI Threat Summary
-                  </h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    {selectedJob.ai_summary || 'Analysis in progress...'}
-                  </p>
-                </motion.div>
-
-                {/* MITRE Tactics */}
-                <motion.div className="ui-panel p-6" variants={fadeInUp}>
-                  <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <div className="w-6 h-6 rounded bg-red-50 flex items-center justify-center text-red-500">
-                      <ShieldAlert size={14} />
-                    </div>
-                    MITRE ATT&CK Tactics
-                  </h3>
-                  <div className="space-y-3">
-                    {(selectedJob.mitre_tactics || []).length === 0 ? (
-                      <p className="text-sm text-gray-400 italic">No tactics detected.</p>
-                    ) : (
-                      selectedJob.mitre_tactics.map((t: any, i: number) => (
-                        <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm border border-gray-100">
-                          <span className="text-red-600 font-medium">{t.id}</span>
-                          <span className="text-gray-700">{t.name}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </motion.div>
-
-                {/* File Metadata */}
-                <motion.div className="ui-panel p-6" variants={fadeInUp}>
-                  <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <div className="w-6 h-6 rounded bg-gray-100 flex items-center justify-center text-gray-600">
-                      <FileText size={14} />
-                    </div>
-                    File Metadata
-                  </h3>
-                  <div className="space-y-4 text-sm">
-                    {[
-                      { label: 'SHA256', value: selectedJob.metadata?.artifact_sha256 },
-                      { label: 'MD5', value: selectedJob.metadata?.md5 },
-                      { label: 'Size', value: selectedJob.metadata?.size ? `${(selectedJob.metadata.size / 1024).toFixed(2)} KB` : null },
-                      { label: 'Entropy', value: selectedJob.metadata?.entropy?.toFixed(2) },
-                    ].map((item, i) => (
-                      <div key={item.label} className="flex flex-col">
-                        <span className="text-gray-400 text-xs font-medium uppercase">{item.label}</span>
-                        <span className="text-gray-900 break-all font-mono text-xs mt-1 bg-gray-50 p-1.5 rounded border border-gray-100">{item.value || 'N/A'}</span>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-
-                {/* IOCs */}
-                {(selectedJob.iocs || []).length > 0 && (
-                  <motion.div className="col-span-2 ui-panel p-6" variants={fadeInUp}>
-                    <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                      <div className="w-6 h-6 rounded bg-orange-50 flex items-center justify-center text-orange-500">
-                        <Pin size={14} />
-                      </div>
-                      Indicators of Compromise
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {selectedJob.iocs.map((ioc: any, i: number) => (
-                        <div key={i} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg text-sm">
-                          <span className="text-orange-600 font-semibold text-xs uppercase">{ioc.type}</span>
-                          <span className="text-gray-700 truncate ml-2 font-mono text-xs">{ioc.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="empty"
-              className="h-full flex flex-col items-center justify-center text-gray-400"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Search className="w-16 h-16 text-gray-200 mb-6" />
-              <span className="text-lg font-medium text-gray-500 mb-2">No Analysis Selected</span>
-              <span className="text-sm">Select an item from the left or upload a new artifact</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </motion.div>
+    </div>
   );
 };
 

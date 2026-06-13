@@ -10,55 +10,32 @@ interface StatCardProps {
   trend?: {
     value: number;
     isUp: boolean;
+    color?: 'red' | 'emerald';
   };
   color?: 'accent' | 'green' | 'alert' | 'default';
 }
 
-export const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, trend, color = 'default' }) => {
-  // Map our internal states to the new light theme colors
-  const colorConfig = {
-    accent: { bg: 'bg-[#c5f37d]', text: 'text-gray-900', iconBg: 'bg-gray-900', iconText: 'text-white' },
-    green: { bg: 'bg-white', text: 'text-gray-900', iconBg: 'bg-[#c5f37d]', iconText: 'text-gray-900' },
-    alert: { bg: 'bg-white', text: 'text-gray-900', iconBg: 'bg-red-100', iconText: 'text-red-600' },
-    default: { bg: 'bg-white', text: 'text-gray-900', iconBg: 'bg-gray-100', iconText: 'text-gray-600' },
-  };
-
-  const currentStyle = colorConfig[color];
-
+export const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, trend }) => {
   return (
     <motion.div
-      className={`p-6 rounded-[1.25rem] border border-gray-100 flex flex-col relative overflow-hidden group cursor-default shadow-[0_4px_20px_-2px_rgba(0,0,0,0.03)] ${currentStyle.bg}`}
-      whileHover={{
-        scale: 1.02,
-        y: -4,
-        boxShadow: `0 12px 24px -4px rgba(0,0,0,0.06)`,
-        transition: { duration: 0.3, ease: 'easeOut' },
-      }}
-      whileTap={{ scale: 0.98 }}
+      className="p-8 border border-[#333333] bg-[#000000] flex flex-col cursor-default hover:border-[#ffffff] transition-colors"
+      whileHover={{ y: -2 }}
     >
-      <div className="flex items-center space-x-3 mb-6">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStyle.iconBg}`}>
-          <Icon className={`w-4 h-4 ${currentStyle.iconText}`} />
-        </div>
-        <h3 className="text-gray-500 font-medium text-sm tracking-wide">{title}</h3>
+      <div className="flex items-center justify-between mb-8">
+        <h3 className="font-heading font-bold text-sm text-[#888888] uppercase tracking-widest">{title}</h3>
+        <Icon className="w-5 h-5 text-[#ffffff]" />
       </div>
-      
+
       <div className="flex justify-between items-end">
-        <div className="flex items-baseline space-x-2">
-          <span className={`text-2xl font-bold ${currentStyle.text}`}>{value}</span>
-        </div>
-        
+        <span className="text-4xl font-heading font-bold text-[#ffffff] tracking-tighter">{value}</span>
+
         {trend && (
-          <motion.div
-            className={`text-xs font-medium flex items-center gap-1 ${trend.isUp ? 'text-[#7fb827]' : 'text-red-500'}`}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            {trend.isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-            <span>{Math.abs(trend.value)}%</span>
-            <span className="text-gray-400 font-normal ml-1 hidden sm:inline">vs last</span>
-          </motion.div>
+          <div className="mt-4 flex items-center text-xs font-mono font-bold uppercase tracking-widest">
+            {trend.isUp ? <TrendingUp size={14} className="mr-2" /> : <TrendingDown size={14} className="mr-2" />}
+            <span className={trend.color === 'red' ? 'text-red-500' : trend.color === 'emerald' ? 'text-emerald-500' : trend.isUp ? 'text-[#ffffff]' : 'text-[#888888]'}>
+              {trend.isUp ? '+' : '-'}{trend.value}%
+            </span>
+          </div>
         )}
       </div>
     </motion.div>

@@ -55,111 +55,105 @@ export const DashboardLayout: React.FC = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-[#f4f6f8] text-gray-900 overflow-hidden font-sans">
-      {/* Sidebar — always static, never re-mounts */}
-      <aside className="w-64 bg-[#f4f6f8] flex flex-col pt-8 pb-4">
-        <div className="px-8 mb-10 flex items-center">
-          <div className="bg-gray-900 text-white p-1.5 rounded-lg mr-3">
-            <Shield className="w-5 h-5" />
-          </div>
-          <span className="font-bold text-xl tracking-tight text-gray-900">SENTINEL</span>
+    <div className="flex min-h-screen bg-[#000000] text-[#ffffff] font-sans">
+      {/* ── Sidebar ────────────────────────────────────────── */}
+      <aside className="fixed top-0 left-0 w-[280px] h-screen border-r border-[#222222] flex flex-col pt-10 pb-6 shrink-0 bg-[#000000] z-40">
+        {/* Brand */}
+        <div className="px-8 mb-12 flex items-center gap-4">
+          <Shield className="w-6 h-6 text-[#ffffff]" />
+          <span className="font-heading font-bold text-lg tracking-widest uppercase">SENTINEL</span>
         </div>
-        
-        <nav className="flex-1 px-4 space-y-1">
+
+        {/* Navigation */}
+        <nav className="flex-1 px-4 space-y-2">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center px-4 py-3 rounded-2xl text-sm font-medium transition-all duration-200 ${
-                  isActive 
-                    ? 'bg-[#c5f37d] text-gray-900 shadow-sm' 
-                    : 'text-gray-500 hover:text-gray-900 hover:bg-white/60'
+                className={`flex items-center px-4 py-3.5 text-sm font-medium transition-all duration-200 uppercase tracking-widest ${
+                  isActive
+                    ? 'bg-[#ffffff] text-[#000000]'
+                    : 'text-[#888888] hover:text-[#ffffff] hover:bg-[#111111]'
                 }`}
               >
-                <item.icon className={`w-5 h-5 mr-3 transition-colors duration-200 ${isActive ? 'text-gray-900' : 'text-gray-400'}`} />
+                <item.icon className={`w-[18px] h-[18px] mr-4 ${isActive ? 'text-[#000000]' : 'text-[#888888]'}`} />
                 {item.label}
               </Link>
-            )
+            );
           })}
         </nav>
 
+        {/* Logout */}
         <div className="px-4 mt-auto">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center px-4 py-3 text-sm text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all duration-200 font-medium group"
+            className="w-full flex items-center px-4 py-3.5 text-sm text-[#888888] hover:text-[#ffffff] hover:bg-[#111111] transition-all duration-200 font-medium uppercase tracking-widest"
           >
-            <LogOut className="w-5 h-5 mr-3 text-gray-400 group-hover:text-red-500 transition-colors" />
+            <LogOut className="w-[18px] h-[18px] mr-4" />
             Sign Out
           </button>
         </div>
       </aside>
 
-      {/* Main Content Container */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden p-4 pl-0">
-        <main className="flex-1 flex flex-col bg-white rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.02)] overflow-hidden border border-gray-100">
-          {/* Header — always static */}
-          <header className="h-20 bg-white flex items-center justify-between px-8 z-10 relative shrink-0">
-            {/* Search Bar */}
-            <div className="flex-1 max-w-md relative">
-              <Search className="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input 
-                type="text" 
-                placeholder="Search" 
-                className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#c5f37d] focus:bg-white transition-all"
-              />
-            </div>
-
-            {/* Right Header Actions */}
-            <div className="flex items-center space-x-4">
-               {/* Hidden file input for New Scan */}
-               <input 
-                 type="file" 
-                 ref={fileInputRef} 
-                 onChange={handleFileChange} 
-                 className="hidden" 
-               />
-               <button 
-                 onClick={handleUploadClick}
-                 disabled={isUploading}
-                 className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-medium text-sm transition-all ${
-                   isUploading 
-                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                     : 'bg-[#c5f37d] text-gray-900 hover:shadow-lg hover:-translate-y-0.5'
-                 }`}
-               >
-                 {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                 {isUploading ? 'Uploading...' : 'New Scan'}
-               </button>
-               
-               <button 
-                 onClick={() => alert('Messages feature coming soon!')}
-                 className="p-2.5 rounded-full bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors"
-               >
-                 <MessageSquare className="w-5 h-5" />
-               </button>
-               <button 
-                 onClick={() => alert('You have 2 new notifications.')}
-                 className="p-2.5 rounded-full bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors relative"
-               >
-                 <Bell className="w-5 h-5" />
-                 <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-               </button>
-               
-               <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-medium shadow-sm ml-2 cursor-pointer hover:bg-gray-800 transition-colors" title="Profile Settings">
-                  {user?.username.charAt(0).toUpperCase()}
-               </div>
-            </div>
-          </header>
-          
-          {/* Content area — each page handles its own animation */}
-          <div className="flex-1 overflow-auto bg-white p-6">
-            <Outlet />
+      {/* ── Main Area ─────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col min-h-screen ml-[280px]">
+        {/* Top Bar */}
+        <header className="sticky top-0 z-50 h-[88px] border-b border-[#222222] flex items-center justify-between px-10 shrink-0 bg-[#000000]/80 backdrop-blur-md">
+          {/* Search */}
+          <div className="flex-1 max-w-md relative">
+            <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-[#666666]" />
+            <input
+              type="text"
+              placeholder="SEARCH ANALYSES..."
+              className="w-full pl-12 pr-4 py-3.5 bg-[#000000] border border-[#333333] text-sm text-[#ffffff] placeholder:text-[#666666] focus:border-[#ffffff] font-mono tracking-widest transition-all"
+            />
           </div>
-        </main>
+
+          {/* Actions */}
+          <div className="flex items-center gap-6">
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+            <button
+              onClick={handleUploadClick}
+              disabled={isUploading}
+              className={`flex items-center gap-3 px-6 py-3.5 font-heading font-bold text-sm uppercase tracking-widest transition-all border ${
+                isUploading
+                  ? 'bg-[#111111] text-[#666666] border-[#333333] cursor-not-allowed'
+                  : 'bg-[#ffffff] text-[#000000] border-[#ffffff] hover:bg-[#000000] hover:text-[#ffffff]'
+              }`}
+            >
+              {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              {isUploading ? 'UPLOADING...' : 'NEW SCAN'}
+            </button>
+
+            <div className="flex items-center gap-2 border-l border-[#222222] pl-6">
+              <button
+                onClick={() => alert('Messages feature coming soon!')}
+                className="p-2.5 text-[#888888] hover:text-[#ffffff] transition-colors"
+              >
+                <MessageSquare className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => alert('You have 2 new notifications.')}
+                className="p-2.5 text-[#888888] hover:text-[#ffffff] transition-colors relative"
+              >
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-[#ffffff] rounded-full border-2 border-[#000000]"></span>
+              </button>
+
+              <div className="w-10 h-10 border border-[#444444] flex items-center justify-center text-[#ffffff] font-heading font-bold ml-4 cursor-pointer hover:bg-[#ffffff] hover:text-[#000000] transition-colors" title="Profile">
+                {user?.username.charAt(0).toUpperCase()}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Content */}
+        <div className="flex-1 p-10">
+          <Outlet />
+        </div>
       </div>
     </div>
   );
 };
-

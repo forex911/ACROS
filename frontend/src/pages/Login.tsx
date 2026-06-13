@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 import { useAuth } from '../hooks/useAuth';
 import api from '../api/client';
 import { Lock, User as UserIcon, Shield } from 'lucide-react';
 
+gsap.registerPlugin(useGSAP);
+
 export const Login: React.FC = () => {
+  const container = useRef<HTMLDivElement>(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -13,164 +17,131 @@ export const Login: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const DEMO_USER = { username: 'admin', roles: ['admin', 'analyst'] };
-  const DEMO_TOKEN = 'demo-token-sentinel-ai';
+  useGSAP(() => {
+    const tl = gsap.timeline();
+    
+    tl.fromTo(".gsap-bg-grid", 
+      { opacity: 0, scale: 1.1 },
+      { opacity: 1, scale: 1, duration: 2, ease: "power2.out" }
+    )
+    .fromTo(".gsap-card",
+      { opacity: 0, y: 40 },
+      { opacity: 1, y: 0, duration: 1, ease: "power3.out" },
+      "-=1.5"
+    )
+    .fromTo(".gsap-element",
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.8, stagger: 0.1, ease: "power3.out" },
+      "-=0.8"
+    );
+  }, { scope: container });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoggingIn(true);
 
-    // Authentication logic proceeds via backend
-
     try {
-      const res = await api.post('/auth/login', {
-        username,
-        password
-      });
-
+      const res = await api.post('/auth/login', { username, password });
       const { access_token } = res.data;
       const userRes = await api.get('/auth/me', {
         headers: { Authorization: `Bearer ${access_token}` }
       });
-
       login(access_token, userRes.data);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Authentication failed. Use admin / sentinel123 for demo.');
       setIsLoggingIn(false);
+      
+      // Error shake animation
+      gsap.fromTo(".gsap-card",
+        { x: -10 },
+        { x: 0, duration: 0.4, ease: "elastic.out(1, 0.3)" }
+      );
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f4f6f8] relative overflow-hidden font-sans">
-      {/* Abstract background shapes */}
-      <motion.div
-        className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-[#c5f37d]/20 blur-[100px]"
-        animate={{ scale: [1, 1.05, 1] }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      <motion.div
-        className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-blue-500/10 blur-[100px]"
-        animate={{ scale: [1, 1.1, 1] }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-      />
+    <div ref={container} className="min-h-screen flex items-center justify-center bg-[#000000] relative overflow-hidden font-sans">
+      {/* Decorative Grid Lines */}
+      <div className="gsap-bg-grid absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)]"></div>
 
-      <motion.div
-        className="bg-white p-10 w-full max-w-md relative z-10 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100"
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-      >
-        {/* Logo + Title */}
-        <motion.div
-          className="flex flex-col items-center mb-8"
-          initial={{ opacity: 0, y: -16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.4 }}
-        >
-          <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mb-5 border border-green-100 shadow-sm">
-            <Shield className="w-8 h-8 text-green-600" />
+      <div className="gsap-card p-12 w-full max-w-md relative z-10 border border-[#333333] bg-[#000000]">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-12">
+          <div className="gsap-element w-16 h-16 border border-[#ffffff] flex items-center justify-center mb-6">
+            <Shield className="w-8 h-8 text-[#ffffff]" />
           </div>
-          <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Sentinel<span className="text-green-600">AI</span></h2>
-          <p className="text-gray-500 text-sm mt-1 font-medium">Enterprise Threat Intelligence</p>
-        </motion.div>
+          <h2 className="gsap-element text-4xl font-heading font-black text-[#ffffff] tracking-tighter uppercase">Sentinel</h2>
+          <p className="gsap-element text-[#888888] font-mono text-xs mt-2 tracking-widest uppercase">Authorization Protocol</p>
+        </div>
 
-        {/* Error message */}
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl mb-6 text-sm font-medium flex items-center gap-2"
-              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-              animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
-              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div>
-              {error}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Error */}
+        {error && (
+          <div className="bg-[#111111] border border-[#ffffff] text-[#ffffff] px-4 py-3 mb-8 text-xs font-mono font-bold flex items-center gap-3 uppercase tracking-wider">
+            <div className="w-2 h-2 bg-[#ffffff] shrink-0" />
+            {error}
+          </div>
+        )}
 
         {/* Form */}
-        <motion.form
-          onSubmit={handleLogin}
-          className="space-y-5"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.4 }}
-        >
-          <div>
-            <label className="block text-gray-700 text-xs font-bold uppercase tracking-wide mb-2">Username</label>
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div className="gsap-element">
+            <label className="block text-[#888888] text-[11px] font-mono font-bold uppercase tracking-widest mb-2">Username</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <UserIcon className="h-4 w-4 text-gray-400" />
-              </div>
+              <UserIcon className="h-4 w-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#666666]" />
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-gray-900 font-medium focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-200"
-                placeholder="Enter username"
+                className="w-full bg-[#000000] border border-[#333333] pl-12 pr-4 py-3.5 text-sm font-mono text-[#ffffff] placeholder:text-[#444444] focus:border-[#ffffff] transition-colors"
+                placeholder="USER_ID"
                 required
               />
             </div>
           </div>
-          
-          <div>
-            <label className="block text-gray-700 text-xs font-bold uppercase tracking-wide mb-2">Password</label>
+
+          <div className="gsap-element">
+            <label className="block text-[#888888] text-[11px] font-mono font-bold uppercase tracking-widest mb-2">Password</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <Lock className="h-4 w-4 text-gray-400" />
-              </div>
+              <Lock className="h-4 w-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#666666]" />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-gray-900 font-medium focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-200"
+                className="w-full bg-[#000000] border border-[#333333] pl-12 pr-4 py-3.5 text-sm font-mono text-[#ffffff] placeholder:text-[#444444] focus:border-[#ffffff] transition-colors"
                 placeholder="••••••••"
                 required
               />
             </div>
           </div>
 
-          <motion.button
+          <button
             type="submit"
             disabled={isLoggingIn}
-            className="w-full bg-gray-900 text-white font-bold py-3 rounded-xl mt-6 flex items-center justify-center gap-2 disabled:opacity-70 hover:bg-gray-800 transition-colors shadow-sm"
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
+            className="gsap-element w-full bg-[#ffffff] text-[#000000] font-heading font-bold uppercase tracking-widest py-4 mt-8 flex items-center justify-center gap-3 disabled:opacity-50 hover:bg-[#000000] hover:text-[#ffffff] border border-[#ffffff] transition-colors active:scale-95"
           >
             {isLoggingIn ? (
               <>
-                <motion.div
-                  className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
-                />
-                Authenticating...
+                <div className="w-4 h-4 border-2 border-[#000000] border-t-transparent rounded-full animate-spin" />
+                AUTHENTICATING...
               </>
             ) : (
-              'Sign In'
+              'INITIALIZE SESSION'
             )}
-          </motion.button>
-        </motion.form>
+          </button>
+        </form>
 
-        {/* Demo credentials hint */}
-        <motion.div
-          className="mt-8 p-4 bg-gray-50 border border-gray-100 rounded-xl text-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.4 }}
-        >
-          <p className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide">Demo Access</p>
-          <div className="text-sm flex items-center justify-center gap-3">
-            <div className="bg-white px-2 py-1 rounded border border-gray-200 shadow-sm text-gray-600 font-medium">admin</div>
-            <span className="text-gray-300">•</span>
-            <div className="bg-white px-2 py-1 rounded border border-gray-200 shadow-sm text-gray-600 font-medium">sentinel123</div>
+        {/* Demo hint */}
+        <div className="gsap-element mt-10 pt-8 border-t border-[#222222] text-center">
+          <p className="text-[10px] font-mono font-bold text-[#666666] mb-3 uppercase tracking-widest">Demo Access</p>
+          <div className="text-xs font-mono flex items-center justify-center gap-3">
+            <code className="text-[#ffffff]">admin</code>
+            <span className="text-[#444444]">/</span>
+            <code className="text-[#ffffff]">sentinel123</code>
           </div>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 };

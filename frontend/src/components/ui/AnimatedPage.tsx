@@ -14,7 +14,7 @@ export const AnimatedPage: React.FC<{ children: React.ReactNode; className?: str
       exit={{ opacity: 0, y: -12 }}
       transition={{
         duration: 0.4,
-        ease: [0.25, 0.46, 0.45, 0.94], // ease-out-quad
+        ease: "easeOut", // ease-out-quad
       }}
     >
       {children}

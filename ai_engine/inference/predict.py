@@ -44,8 +44,15 @@ class MalwareClassifier:
             probs = self.model.predict_proba(feature_vector)[0]
             malicious_prob = float(probs[1]) if len(probs) > 1 else float(probs[0])
         else:
-            # Dummy logic based on feature heuristics (e.g. suspicious flags index 3)
-            suspicious_score = feature_vector[0][3] * 10
+            # Dummy logic based on feature heuristics
+            # feature_vector = [proc_cnt, net_cnt, fw_cnt, len(capabilities)]
+            proc_cnt = feature_vector[0][0]
+            net_cnt = feature_vector[0][1]
+            fw_cnt = feature_vector[0][2]
+            cap_cnt = feature_vector[0][3]
+            
+            # Complex attacks generate lots of telemetry
+            suspicious_score = (cap_cnt * 0.15) + (net_cnt * 0.10) + (proc_cnt * 0.05) + (fw_cnt * 0.02)
             malicious_prob = min(0.99, 0.1 + suspicious_score)
             
         is_malicious = malicious_prob > 0.75

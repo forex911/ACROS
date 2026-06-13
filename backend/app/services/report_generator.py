@@ -18,7 +18,15 @@ from app.models.job_model import set_report, append_log
 from app.core.metrics import jobs_processed_total, malware_detected_total
 import asyncio
 import logging
+import sys
+import os
+import numpy as np
 from opentelemetry import trace
+
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
+from ai_engine.inference.predict import MalwareClassifier
 
 logger = logging.getLogger("report_generator")
 tracer = trace.get_tracer(__name__)
@@ -123,7 +131,20 @@ async def generate_report_pipeline(job_id: str, local_path: str, filename: str):
             impact = ImpactEngine.calculate_impact(capabilities, behavior_chains)
             
             tactics = {m.get("tactic", m.get("name", "Unknown")) for m in mitre_mappings}
-            risk_assessment = RiskEngine.calculate_risk(capabilities, behavior_chains, threat, len(tactics), 0)
+            
+            # Get ML Risk Score
+            try:
+                classifier = MalwareClassifier()
+                proc_cnt = sum(1 for e in telemetry_events if e.get("type") == "PROCESS_CREATE")
+                net_cnt = sum(1 for e in telemetry_events if e.get("type") in ("SOCKET_CONNECT", "NETWORK_CONNECT", "DNS_QUERY"))
+                fw_cnt = sum(1 for e in telemetry_events if e.get("type") == "FILE_WRITE")
+                feature_vector = np.array([[proc_cnt, net_cnt, fw_cnt, len(capabilities)]])
+                ml_risk_score = classifier.predict_risk(feature_vector)["risk_score"]
+            except Exception as e:
+                logger.error(f"ML risk prediction failed: {e}")
+                ml_risk_score = 0.0
+
+            risk_assessment = RiskEngine.calculate_risk(capabilities, behavior_chains, threat, len(tactics), 0, ml_risk_score)
             
             analyst_report = AnalystReportGenerator.generate(
                 capabilities, behavior_chains, threat, list(tactics), impact, risk_assessment

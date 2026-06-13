@@ -6,66 +6,46 @@ import { AttackMatrix } from '../components/threat/AttackMatrix';
 const AttackDashboard: React.FC = () => {
   return (
     <motion.div
-      className="flex flex-col h-full space-y-6 max-w-full"
-      initial={{ opacity: 0, y: 18 }}
+      className="flex flex-col h-full space-y-8 max-w-[1400px] mx-auto"
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
     >
       {/* Header */}
-      <motion.div
-        className="flex items-center justify-between bg-white p-6 rounded-xl border border-gray-100 shadow-sm"
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.1 }}
-      >
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 border border-purple-100">
-              <Target className="w-5 h-5" />
-            </div>
-            ATT&CK Intelligence Matrix
-          </h1>
-          <p className="text-gray-500 text-sm mt-1 ml-13">Real-time correlation of sandbox telemetry to MITRE ATT&CK techniques.</p>
-        </div>
-        <motion.div
-          className="flex gap-4"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.25, duration: 0.4 }}
-        >
-           <motion.div
-             className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg shadow-sm"
-             whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-           >
-              <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                <Activity size={16} className="text-green-600" />
-              </motion.div>
-              <span className="text-sm text-gray-700">Live Telemetry: <strong className="text-green-700">Active</strong></span>
-           </motion.div>
-           <motion.div
-             className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg shadow-sm"
-             whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-           >
-              <Zap size={16} className="text-red-600" />
-              <span className="text-sm text-red-700">Techniques Detected: <strong>4</strong></span>
-           </motion.div>
-        </motion.div>
-      </motion.div>
-
-      {/* Main Matrix Area */}
-      <motion.div
-        className="flex-1 min-h-[600px] border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm relative flex flex-col"
-        initial={{ opacity: 0, scale: 0.97 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.3, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-      >
-          <div className="flex-1 w-full h-full p-4 overflow-hidden">
-             <AttackMatrix />
+      <div className="p-8 border border-[#333333] bg-[#000000] flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <div className="w-12 h-12 border border-[#ffffff] flex items-center justify-center text-[#ffffff]">
+            <Target className="w-6 h-6" />
           </div>
+          <div>
+            <h1 className="text-3xl font-heading font-bold text-[#ffffff] tracking-tighter uppercase">ATT&CK Matrix</h1>
+            <p className="text-[#888888] font-mono text-xs uppercase tracking-widest mt-1">Real-time Sandbox Correlation</p>
+          </div>
+        </div>
+        <div className="flex gap-4">
+          <div className="flex items-center gap-3 px-4 py-2 border border-red-500 bg-red-500/10">
+            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}>
+              <Activity size={14} className="text-red-500" />
+            </motion.div>
+            <span className="text-xs font-mono font-bold uppercase tracking-widest text-red-500">LIVE: ACTIVE</span>
+          </div>
+          <div className="flex items-center gap-3 px-4 py-2 border border-[#333333] bg-[#000000]">
+            <Zap size={14} className="text-[#888888]" />
+            <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#888888]">TECHNIQUES: 4</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Matrix */}
+      <motion.div
+        className="flex-1 min-h-[600px] border border-[#333333] bg-[#000000] overflow-hidden relative flex flex-col"
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.2, duration: 0.4, ease: "easeOut" }}
+      >
+        <div className="flex-1 w-full h-full p-6 overflow-hidden">
+          <AttackMatrix />
+        </div>
       </motion.div>
     </motion.div>
   );

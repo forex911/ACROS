@@ -1,5 +1,6 @@
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Activity, ShieldAlert, Cpu } from 'lucide-react';
+import { Activity, ShieldAlert } from 'lucide-react';
 import api from '../../api/client';
 
 interface Tactic {
@@ -27,49 +28,49 @@ export const AttackMatrix: React.FC = () => {
     refetchInterval: 5000,
   });
 
-  if (isLoading) return <div className="text-gray-500 font-medium p-6">Loading Matrix...</div>;
-  if (error) return <div className="text-red-500 font-medium p-6">Error Loading Matrix</div>;
-  if (tactics.length === 0) return <div className="text-gray-500 font-medium p-6 bg-white border border-gray-100 rounded-xl">No active threats detected.</div>;
+  if (isLoading) return <div className="text-[#888888] font-mono text-xs uppercase tracking-widest p-6">LOADING MATRIX...</div>;
+  if (error) return <div className="text-[#ffffff] font-mono font-bold uppercase tracking-widest p-6 border border-[#ffffff] m-4 inline-block">ERROR LOADING MATRIX.</div>;
+  if (tactics.length === 0) return <div className="text-[#666666] font-mono text-xs uppercase tracking-widest p-10 border border-[#222222] text-center m-4">NO ACTIVE THREATS DETECTED.</div>;
   
   return (
-    <div className="w-full h-full overflow-x-auto bg-gray-50 text-gray-700 font-sans p-2 rounded-xl">
-      <div className="flex gap-4 p-4 min-w-max">
-        {tactics.map((tactic) => (
-          <div key={tactic.id} className="w-64 flex-shrink-0">
+    <div className="w-full h-full overflow-x-auto bg-[#000000] p-4 custom-scrollbar min-w-0" data-lenis-prevent>
+      <div className="flex gap-6 min-w-max">
+        {tactics.map((tactic: Tactic) => (
+          <div key={tactic.id} className="w-[280px] flex-shrink-0">
             {/* Tactic Header */}
-            <div className="bg-white border border-gray-200 rounded-lg p-3 mb-3 flex items-center justify-between shadow-sm">
+            <div className="bg-[#111111] border-2 border-[#ffffff] p-4 mb-4 flex items-center justify-between">
                <div>
-                  <h3 className="font-bold text-sm text-gray-900 truncate" title={tactic.name}>
+                  <h3 className="font-heading font-bold text-sm uppercase tracking-widest text-[#ffffff] truncate" title={tactic.name}>
                      {tactic.name}
                   </h3>
-                  <span className="text-xs text-gray-500 font-mono bg-gray-100 px-1.5 py-0.5 rounded">{tactic.id}</span>
+                  <span className="text-[10px] text-[#000000] font-mono font-bold bg-[#ffffff] px-2 py-1 mt-2 inline-block uppercase tracking-widest">{tactic.id}</span>
                </div>
-               <ShieldAlert size={16} className="text-gray-400" />
+               <ShieldAlert size={18} className="text-[#ffffff]" />
             </div>
 
             {/* Techniques List */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               {tactic.techniques.map((technique) => (
                 <div 
                   key={technique.id} 
                   className={`
-                    p-3 border rounded-lg cursor-pointer transition-all duration-200 shadow-sm
+                    p-4 border transition-colors duration-200
                     ${technique.active 
-                      ? 'bg-red-50 border-red-200 hover:border-red-300 hover:bg-red-100' 
-                      : 'bg-white border-gray-100 hover:border-gray-300 hover:bg-gray-50'
+                      ? 'bg-red-500/10 border-red-500' 
+                      : 'bg-[#000000] border-[#333333] hover:border-[#666666]'
                     }
                   `}
                   title={technique.description}
                 >
-                   <div className="flex justify-between items-start mb-1">
-                      <span className={`font-semibold text-sm leading-tight ${technique.active ? 'text-red-700' : 'text-gray-700'}`}>{technique.name}</span>
+                   <div className="flex justify-between items-start mb-3">
+                      <span className={`font-sans font-bold text-sm leading-snug ${technique.active ? 'text-red-500' : 'text-[#888888]'}`}>{technique.name}</span>
                    </div>
-                   <div className="flex justify-between items-center mt-2">
-                      <span className={`text-xs font-mono px-1.5 py-0.5 rounded ${technique.active ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>{technique.id}</span>
+                   <div className="flex justify-between items-center mt-auto">
+                      <span className={`text-[10px] font-mono font-bold px-2 py-1 uppercase tracking-widest border ${technique.active ? 'bg-red-500 text-[#000000] border-red-500' : 'bg-[#111111] text-[#666666] border-[#222222]'}`}>{technique.id}</span>
                       {technique.active && (
                          <div className="flex items-center space-x-2">
-                           {technique.frequency && <span className="text-[10px] font-bold text-red-700 bg-red-200 px-1.5 py-0.5 rounded-full">x{technique.frequency}</span>}
-                           <Activity size={14} className="animate-pulse text-red-600" />
+                           {technique.frequency && <span className="text-[10px] font-mono font-bold text-red-500 border border-red-500 px-2 py-0.5">x{technique.frequency}</span>}
+                           <Activity size={14} className="animate-pulse text-red-500" />
                          </div>
                       )}
                    </div>

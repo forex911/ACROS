@@ -71,4 +71,16 @@ class CapabilityEngine:
             if t == "HTTP_REQUEST" and d.get("method") == "POST":
                 add_cap("Data Exfiltration", "High", 80, "requests.post() / HTTP POST upload", ["T1048"], "Exfiltration")
 
+            # Discovery & Execution
+            if "whoami" in cmd or "systeminfo" in cmd or "ipconfig" in cmd or "net user" in cmd:
+                add_cap("System Information Discovery", "Medium", 80, "Executed system discovery commands", ["T1033", "T1082"], "Discovery")
+            
+            if "temp" in cmd and "python" in cmd and t == "PROCESS_CREATE" and "sentinel_uploads" not in cmd:
+                add_cap("Suspicious Script Execution", "High", 85, "Python script executed from Temp directory", ["T1059.006"], "Execution")
+
+            if t == "DNS_QUERY":
+                domain = d.get("query", "")
+                if domain.endswith(".com") or domain.endswith(".net") or domain.endswith(".org") or len(domain) > 0:
+                    add_cap("Network Communication", "Low", 50, f"Resolved domain: {domain}", ["T1046"], "Discovery")
+
         return caps
