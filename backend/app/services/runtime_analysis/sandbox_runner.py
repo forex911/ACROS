@@ -6,13 +6,21 @@ import json
 import logging
 import datetime
 import threading
+import tempfile
+import shutil
 from app.database.redis import redis_client
 
 logger = logging.getLogger("sandbox_runner")
 
+# Environment variables to STRIP from sandbox
+STRIPPED_ENV_VARS = [
+    "MONGO_URI", "REDIS_URL", "JWT_SECRET", "SECRET_KEY",
+    "DATABASE_URL", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY",
+    "NEO4J_URI", "NEO4J_PASSWORD", "API_KEY",
+]
+
 async def publish_event(job_id: str, event_type: str, payload: dict):
     channel = f"job_updates:{job_id}"
-    # Payload already contains type, severity, timestamp, and data
     if "type" not in payload:
         payload["type"] = event_type
     if "timestamp" not in payload:
@@ -25,88 +33,119 @@ async def publish_event(job_id: str, event_type: str, payload: dict):
 
 def _run_subprocess_blocking(job_id: str, local_path: str):
     """
-    Runs the sandbox subprocess synchronously (meant to be called via asyncio.to_thread).
-    Uses subprocess.Popen which works on all platforms regardless of the asyncio event loop policy.
-    Returns a list of telemetry event dicts.
+    Runs the sandbox subprocess in an isolated jail directory.
+    - Copies sample into a temp directory
+    - Sets cwd to jail so any created files land there, not in backend
+    - Strips secrets from the environment
+    - Cleans up jail after execution
     """
     telemetry_events = []
-    is_python = local_path.endswith('.py')
-
-    if is_python:
-        wrapper_path = os.path.join(os.path.dirname(__file__), "sandbox_wrapper.py")
-        cmd = [sys.executable, wrapper_path, job_id, local_path]
-        shell = False
-    else:
-        cmd = local_path
-        shell = True
+    jail_dir = None
 
     try:
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=shell,
-        )
-    except Exception as e:
-        logger.error(f"Failed to start sandbox process: {e}")
-        return telemetry_events
+        # ── Create jail ──────────────────────────────────────────
+        jail_dir = os.path.join(tempfile.gettempdir(), "sentinel_sandbox", job_id)
+        os.makedirs(jail_dir, exist_ok=True)
 
-    def _read_stream(stream):
-        for raw_line in stream:
+        filename = os.path.basename(local_path)
+        jailed_path = os.path.join(jail_dir, filename)
+        shutil.copy2(local_path, jailed_path)
+
+        is_python = jailed_path.endswith('.py')
+
+        if is_python:
+            wrapper_path = os.path.join(os.path.dirname(__file__), "sandbox_wrapper.py")
+            cmd = [sys.executable, wrapper_path, job_id, jailed_path]
+            shell = False
+        else:
+            cmd = jailed_path
+            shell = True
+
+        # ── Build restricted env ─────────────────────────────────
+        safe_env = {
+            "PATH": os.environ.get("PATH", ""),
+            "SYSTEMROOT": os.environ.get("SYSTEMROOT", ""),
+            "TEMP": os.environ.get("TEMP", tempfile.gettempdir()),
+            "TMP": os.environ.get("TMP", tempfile.gettempdir()),
+            "SENTINEL_JOB_ID": job_id,
+            "SENTINEL_SANDBOX": "1",
+            "PYTHONIOENCODING": "utf-8",
+        }
+        for var in STRIPPED_ENV_VARS:
+            safe_env.pop(var, None)
+
+        try:
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=shell,
+                cwd=jail_dir,
+                env=safe_env,
+            )
+        except Exception as e:
+            logger.error(f"Failed to start sandbox process: {e}")
+            return telemetry_events
+
+        def _read_stream(stream):
+            for raw_line in stream:
+                try:
+                    line_str = raw_line.decode('utf-8', errors='replace').strip()
+                    if not line_str:
+                        continue
+
+                    is_telemetry = False
+                    if is_python:
+                        try:
+                            data = json.loads(line_str)
+                            if data.get("__telemetry__"):
+                                is_telemetry = True
+                                event_payload = {
+                                    "type": data["event_type"],
+                                    "severity": data.get("severity", "info"),
+                                    "timestamp": data.get("timestamp") or (datetime.datetime.utcnow().isoformat() + "Z"),
+                                    "data": data["data"],
+                                }
+                                from app.services.runtime_analysis.telemetry_classifier import classify_event
+                                classified = classify_event(event_payload)
+                                if classified:
+                                    logger.info(f"Telemetry Collected: {json.dumps(classified)}")
+                                    telemetry_events.append(classified)
+                        except json.JSONDecodeError:
+                            pass
+
+                    if not is_telemetry:
+                        logger.debug(f"[Sandbox {job_id}]: {line_str}")
+                except Exception as e:
+                    logger.error(f"Error reading stream: {e}")
+
+        stdout_thread = threading.Thread(target=_read_stream, args=(process.stdout,))
+        stderr_thread = threading.Thread(target=_read_stream, args=(process.stderr,))
+        stdout_thread.start()
+        stderr_thread.start()
+
+        try:
+            process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            logger.warning(f"Sandbox execution for {job_id} timed out. Terminating.")
+            process.kill()
+            telemetry_events.append({
+                "type": "EXECUTION_TIMEOUT",
+                "severity": "high",
+                "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+                "data": {},
+            })
+
+        stdout_thread.join(timeout=2)
+        stderr_thread.join(timeout=2)
+
+    finally:
+        # ── Cleanup jail ─────────────────────────────────────────
+        if jail_dir:
             try:
-                line_str = raw_line.decode('utf-8', errors='replace').strip()
-                if not line_str:
-                    continue
-
-                is_telemetry = False
-                if is_python:
-                    try:
-                        data = json.loads(line_str)
-                        if data.get("__telemetry__"):
-                            is_telemetry = True
-                            event_payload = {
-                                "type": data["event_type"],
-                                "severity": data.get("severity", "info"),
-                                "timestamp": data.get("timestamp") or (datetime.datetime.utcnow().isoformat() + "Z"),
-                                "data": data["data"],
-                            }
-                            # Classify and filter
-                            from app.services.runtime_analysis.telemetry_classifier import classify_event
-                            classified = classify_event(event_payload)
-                            if classified:
-                                logger.info(f"Telemetry Collected: {json.dumps(classified)}")
-                                telemetry_events.append(classified)
-                    except json.JSONDecodeError:
-                        pass
-
-                if not is_telemetry:
-                    # Raw process output is discarded from structured telemetry stream by the classifier
-                    # but we can optionally keep it here if we want to store it in a different log.
-                    # Since Phase 1 says "Everything else should be discarded", we skip appending PROCESS_OUTPUT to telemetry_events.
-                    logger.debug(f"[Sandbox {job_id}]: {line_str}")
-            except Exception as e:
-                logger.error(f"Error reading stream: {e}")
-
-    # Read stdout and stderr concurrently in threads
-    stdout_thread = threading.Thread(target=_read_stream, args=(process.stdout,))
-    stderr_thread = threading.Thread(target=_read_stream, args=(process.stderr,))
-    stdout_thread.start()
-    stderr_thread.start()
-
-    try:
-        process.wait(timeout=10)
-    except subprocess.TimeoutExpired:
-        logger.warning(f"Sandbox execution for {job_id} timed out. Terminating.")
-        process.kill()
-        telemetry_events.append({
-            "type": "EXECUTION_TIMEOUT",
-            "severity": "high",
-            "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
-            "data": {},
-        })
-
-    stdout_thread.join(timeout=2)
-    stderr_thread.join(timeout=2)
+                shutil.rmtree(jail_dir, ignore_errors=True)
+            except Exception:
+                pass
 
     return telemetry_events
 

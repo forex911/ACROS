@@ -21,14 +21,25 @@ class ArtifactPin(BaseModel):
 
 
 @router.get("/workspace/jobs")
-async def list_workspace_jobs(user=Depends(get_current_user)):
+async def list_workspace_jobs(q: str = None, user=Depends(get_current_user)):
     """
     Returns all sandbox analysis jobs for the Workspace view,
     sorted by most recent first.
     """
     jobs_collection = db["sandbox_jobs"]
+    
+    query = {}
+    if q:
+        query = {
+            "$or": [
+                {"filename": {"$regex": q, "$options": "i"}},
+                {"job_id": {"$regex": q, "$options": "i"}},
+                {"sha256": {"$regex": q, "$options": "i"}}
+            ]
+        }
+        
     cursor = jobs_collection.find(
-        {},
+        query,
         projection={
             "_id": False,
             "job_id": True,

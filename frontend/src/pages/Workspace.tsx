@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import Lenis from 'lenis';
-import { Briefcase, FileText, Pin, Plus, Upload, Search, ShieldAlert, Activity, ExternalLink } from 'lucide-react';
+import { Briefcase, FileText, Pin, Plus, Upload, Search, ShieldAlert, Activity, ExternalLink, Loader2 } from 'lucide-react';
 import api from '../api/client';
 
 gsap.registerPlugin(useGSAP);
@@ -26,6 +26,11 @@ export const Workspace: React.FC = () => {
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const searchParams = new URLSearchParams(location.search);
+  const searchQuery = searchParams.get('q') || '';
+  const [localSearch, setLocalSearch] = useState(searchQuery);
 
   const listScrollRef = useRef<HTMLDivElement>(null);
   const detailScrollRef = useRef<HTMLDivElement>(null);
@@ -66,7 +71,8 @@ export const Workspace: React.FC = () => {
   const fetchJobs = async () => {
     setIsLoadingJobs(true);
     try {
-      const response = await api.get('/workspace/jobs');
+      const endpoint = searchQuery ? `/workspace/jobs?q=${encodeURIComponent(searchQuery)}` : '/workspace/jobs';
+      const response = await api.get(endpoint);
       setJobs(response.data || []);
     } catch (error) {
       console.error("Failed to fetch jobs", error);
@@ -77,7 +83,7 @@ export const Workspace: React.FC = () => {
 
   useEffect(() => {
     fetchJobs();
-  }, []);
+  }, [searchQuery]);
 
   useGSAP(() => {
     if (!isLoadingJobs && jobs.length > 0) {
@@ -175,11 +181,23 @@ export const Workspace: React.FC = () => {
 
         <div ref={listScrollRef} className="flex-1 overflow-y-auto p-5 custom-scrollbar min-h-0" data-lenis-prevent>
           <div className="flex flex-col min-h-full">
+            {searchQuery && (
+              <div className="flex items-center justify-between mb-4 px-2">
+                <span className="text-xs font-mono text-[#888888]">SEARCH: <strong className="text-[#ffffff]">{searchQuery}</strong></span>
+                <button 
+                  onClick={() => navigate('/workspace')} 
+                  className="text-[10px] uppercase tracking-widest text-[#888888] hover:text-[#ffffff] border border-[#333333] px-2 py-1"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+            
             {isLoadingJobs ? (
               <div className="flex items-center justify-center gap-4 text-[#888888] font-mono text-xs uppercase tracking-widest py-10">
-              <div className="w-4 h-4 border-2 border-[#333333] border-t-[#ffffff] rounded-full animate-spin" />
-              SCANNING...
-            </div>
+                <Loader2 className="w-4 h-4 animate-spin text-[#ffffff]" />
+                SCANNING...
+              </div>
           ) : jobs.length === 0 ? (
             <div className="text-center py-16 border border-dashed border-[#333333] m-2">
               <Search className="w-6 h-6 text-[#444444] mx-auto mb-4" />

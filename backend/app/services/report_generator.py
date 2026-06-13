@@ -12,6 +12,7 @@ from app.analysis.threat_classifier import ThreatClassifier
 from app.analysis.impact_engine import ImpactEngine
 from app.analysis.risk_engine import RiskEngine
 from app.analysis.report_generator import AnalystReportGenerator
+from app.analysis.deobfuscation import UniversalDeobfuscator
 from app.services.graph_ingester import GraphIngester
 from app.services.threat_correlation import build_attack_timeline, ingest_timeline_to_graph
 from app.models.job_model import set_report, append_log
@@ -117,6 +118,40 @@ async def generate_report_pipeline(job_id: str, local_path: str, filename: str):
             telemetry_events = await orchestrate_sandbox(job_id, local_path)
             span.set_attribute("telemetry_event_count", len(telemetry_events))
 
+        # 2.4. Artifact Collection & Recursive Analysis
+        with tracer.start_as_current_span("artifact_engine"):
+            await append_log(job_id, "[Pipeline] Running Artifact Collection & Recursive Analysis...")
+            from app.analysis.artifact_engine import ArtifactEngine
+            import asyncio
+            artifact_engine = ArtifactEngine()
+            
+            artifact_report = await asyncio.to_thread(artifact_engine.process, telemetry_events, os.path.dirname(local_path))
+            
+            await append_log(
+                job_id,
+                f"[Artifacts] Collected {artifact_report.get('artifact_count', 0)} artifacts, "
+                f"detected {artifact_report.get('download_count', 0)} downloads."
+            )
+
+        # 2.5. Deobfuscation & Normalization Layer
+        with tracer.start_as_current_span("deobfuscation"):
+            await append_log(job_id, "[Pipeline] Running Universal Deobfuscation Layer...")
+            deobfuscator = UniversalDeobfuscator()
+            
+            # Deobfuscate telemetry (attaches decoded_cmdline, normalized_cmdline to events)
+            deobfuscation_report = deobfuscator.process_telemetry(telemetry_events)
+            
+            # Deobfuscate static strings
+            static_deobfuscation = deobfuscator.process_static_strings(static_results)
+            
+            decoded_count = deobfuscation_report["total_fields_decoded"]
+            layers_count = deobfuscation_report["total_encoding_layers_stripped"]
+            iocs_recovered = len(deobfuscation_report.get("recovered_iocs", []))
+            await append_log(
+                job_id,
+                f"[Deobfuscation] Decoded {decoded_count} fields, stripped {layers_count} layers, recovered {iocs_recovered} IOCs"
+            )
+
         # 3. Correlation & Analysis
         with tracer.start_as_current_span("correlation_analysis"):
             await append_log(job_id, "[Pipeline] Mapping extracted telemetry to MITRE ATT&CK framework...")
@@ -146,6 +181,10 @@ async def generate_report_pipeline(job_id: str, local_path: str, filename: str):
 
             risk_assessment = RiskEngine.calculate_risk(capabilities, behavior_chains, threat, len(tactics), 0, ml_risk_score)
             
+            # Propagate risk from child artifacts
+            max_child_risk = artifact_report.get("max_child_risk", 0)
+            risk_assessment = RiskEngine.propagate_artifact_risk(risk_assessment, max_child_risk)
+            
             analyst_report = AnalystReportGenerator.generate(
                 capabilities, behavior_chains, threat, list(tactics), impact, risk_assessment
             )
@@ -160,6 +199,13 @@ async def generate_report_pipeline(job_id: str, local_path: str, filename: str):
         with tracer.start_as_current_span("graph_ingestion"):
             await append_log(job_id, "[Pipeline] Ingesting analysis results into Neo4j graph...")
             await _ingest_to_graph(job_id, filename, static_results, telemetry_events, iocs, mitre_mappings, yara_matches)
+            
+            try:
+                from app.services.graph_ingester import GraphIngester
+                edges = artifact_engine.get_artifact_graph_edges()
+                await GraphIngester.ingest_artifact_tree(job_id, edges)
+            except Exception as e:
+                logger.error(f"Artifact graph ingestion failed (non-fatal): {e}")
 
         # ── Attack Timeline Correlation ──
         with tracer.start_as_current_span("timeline_generation"):
@@ -183,6 +229,8 @@ async def generate_report_pipeline(job_id: str, local_path: str, filename: str):
                 "analyst_report": analyst_report.model_dump(),
                 "ai_summary": ai_summary,
                 "iocs": iocs,
+                "artifacts": artifact_report,
+                "deobfuscation": deobfuscation_report,
                 "attack_timeline": attack_timeline,
                 "telemetry_count": len(telemetry_events),
                 "telemetry_events": telemetry_events

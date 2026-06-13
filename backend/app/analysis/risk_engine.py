@@ -80,3 +80,38 @@ class RiskEngine:
             },
             reasoning=list(set(reasoning))
         )
+
+    @staticmethod
+    def propagate_artifact_risk(parent_assessment: RiskAssessment, max_child_score: int) -> RiskAssessment:
+        """
+        Elevate parent risk score if a child artifact has a higher risk score.
+        Uses a 90% propagation factor (dropper inherits near-full severity of payload).
+        """
+        if max_child_score <= parent_assessment.score:
+            return parent_assessment
+
+        # 90% propagation
+        propagated_score = int(max_child_score * 0.9)
+        if propagated_score <= parent_assessment.score:
+            return parent_assessment
+
+        final_score = propagated_score
+        if final_score <= 29:
+            severity = "LOW"
+        elif final_score <= 59:
+            severity = "MEDIUM"
+        elif final_score <= 84:
+            severity = "HIGH"
+        else:
+            severity = "CRITICAL"
+
+        # Update assessment
+        parent_assessment.score = final_score
+        parent_assessment.severity = severity
+        
+        # Add reasoning
+        parent_assessment.reasoning.append(
+            f"Risk score elevated to {severity} ({final_score}) due to high-risk dropped/downloaded artifacts."
+        )
+
+        return parent_assessment

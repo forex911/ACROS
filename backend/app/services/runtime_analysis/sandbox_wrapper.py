@@ -4,6 +4,8 @@ import json
 import socket
 import datetime
 import subprocess
+import atexit
+import hashlib
 
 def send_telemetry(job_id, event_type, data):
     # Sends telemetry securely over a local socket to the backend telemetry router
@@ -41,6 +43,32 @@ def instrument_socket(job_id):
         return original_connect(self, address)
     socket.socket.connect = monitored_connect
 
+
+WRITTEN_FILES = set()
+
+def finalize_file_writes():
+    job_id = os.environ.get("SENTINEL_JOB_ID", "unknown")
+    for file_path in list(WRITTEN_FILES):
+        if not os.path.exists(file_path):
+            continue
+        try:
+            size = os.path.getsize(file_path)
+            # Only hash files under 50 MB to prevent sandbox stalling
+            sha256_hash = ""
+            if size <= 50 * 1024 * 1024:
+                sha256 = hashlib.sha256()
+                with open(file_path, "rb") as f:
+                    for chunk in iter(lambda: f.read(8192), b""):
+                        sha256.update(chunk)
+                sha256_hash = sha256.hexdigest()
+                
+            send_telemetry(job_id, "FILE_CREATE", {
+                "path": file_path,
+                "size": size,
+                "sha256": sha256_hash
+            })
+        except Exception:
+            pass
 
 def audit_hook(event, args):
     job_id = os.environ.get("SENTINEL_JOB_ID", "unknown")
@@ -85,7 +113,9 @@ def audit_hook(event, args):
             # Only log writes to suspicious or important locations, or just log all writes
             if 'w' in mode or 'a' in mode or '+' in mode:
                 if not file_path.endswith('.pyc') and '__pycache__' not in file_path:
-                    send_telemetry(job_id, "FILE_WRITE", {"path": file_path})
+                    abs_path = os.path.abspath(file_path)
+                    WRITTEN_FILES.add(abs_path)
+                    send_telemetry(job_id, "FILE_WRITE", {"path": abs_path})
                     
     # Eval/Exec
     elif event == "exec":
@@ -111,6 +141,7 @@ if __name__ == "__main__":
     
     sys.addaudithook(audit_hook)
     instrument_socket(job_id)
+    atexit.register(finalize_file_writes)
     
     send_telemetry(job_id, "STATUS_CHANGE", {"status": "analyzing"})
     send_telemetry(job_id, "PROCESS_CREATE", {"cmdline": f"python {target_script}"})

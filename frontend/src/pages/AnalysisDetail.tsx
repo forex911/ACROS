@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import api from '../api/client';
-import { Activity, ShieldAlert, TerminalSquare, AlertTriangle, FileText } from 'lucide-react';
+import { Activity, ShieldAlert, TerminalSquare, AlertTriangle, FileText, Loader2 } from 'lucide-react';
 import { useWebSocket } from '../hooks/useWebSocket';
 import ThreatGraph from '../components/threat/ThreatGraph';
 
@@ -58,7 +58,10 @@ const AnalysisDetail: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 font-mono">
-        <div className="text-[#ffffff] text-sm font-bold tracking-widest mb-10 uppercase">INITIALIZING...</div>
+        <div className="flex items-center gap-3 text-[#ffffff] text-sm font-bold tracking-widest mb-10 uppercase">
+          <Loader2 className="w-5 h-5 animate-spin text-[#888888]" />
+          INITIALIZING...
+        </div>
         
         <div className="w-full max-w-2xl bg-[#000000] border border-[#333333] p-6 text-xs text-[#888888]">
            <div className="flex justify-between items-center mb-6 border-b border-[#333333] pb-4">

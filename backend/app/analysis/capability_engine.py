@@ -35,7 +35,17 @@ class CapabilityEngine:
         for evt in telemetry_events:
             t = evt.get("type")
             d = evt.get("data", {})
-            cmd = str(d.get("cmdline", "") or d.get("target", "")).lower()
+            raw_cmd = str(d.get("cmdline", "") or d.get("target", "")).lower()
+            # Prefer normalized/decoded content from deobfuscation layer
+            cmd = str(d.get("normalized_cmdline", d.get("decoded_cmdline", raw_cmd))).lower()
+
+            # Detect obfuscation usage as a capability
+            deob_layers = d.get("deobfuscation_layers_cmdline", [])
+            if deob_layers:
+                chain = " → ".join(l.get("encoding", "") for l in deob_layers)
+                add_cap("Obfuscated Execution", "High", 90,
+                        f"Decoded {len(deob_layers)} encoding layer(s): {chain}",
+                        ["T1027", "T1140"], "Defense Evasion")
 
             # Credential Access
             if "login data" in cmd:

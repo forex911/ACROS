@@ -30,8 +30,30 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/;
+
+const fixUtcDates = (obj: any): any => {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === 'string' && isoDateRegex.test(obj)) {
+    return obj + 'Z';
+  }
+  if (Array.isArray(obj)) {
+    for (let i = 0; i < obj.length; i++) {
+      obj[i] = fixUtcDates(obj[i]);
+    }
+  } else if (typeof obj === 'object') {
+    for (const key of Object.keys(obj)) {
+      obj[key] = fixUtcDates(obj[key]);
+    }
+  }
+  return obj;
+};
+
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    response.data = fixUtcDates(response.data);
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {

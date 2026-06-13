@@ -3,12 +3,14 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Shield, Activity, FileSearch, LogOut, Terminal, Briefcase, Search, Plus, Bell, MessageSquare, Loader2 } from 'lucide-react';
 import api from '../api/client';
+import { ProfilePanel } from '../components/ProfilePanel';
 
 export const DashboardLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isUploading, setIsUploading] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogout = () => {
@@ -101,13 +103,17 @@ export const DashboardLayout: React.FC = () => {
       <div className="flex-1 flex flex-col min-h-screen ml-[280px]">
         {/* Top Bar */}
         <header className="sticky top-0 z-50 h-[88px] border-b border-[#222222] flex items-center justify-between px-10 shrink-0 bg-[#000000]/80 backdrop-blur-md">
-          {/* Search */}
           <div className="flex-1 max-w-md relative">
             <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-[#666666]" />
             <input
               type="text"
               placeholder="SEARCH ANALYSES..."
-              className="w-full pl-12 pr-4 py-3.5 bg-[#000000] border border-[#333333] text-sm text-[#ffffff] placeholder:text-[#666666] focus:border-[#ffffff] font-mono tracking-widest transition-all"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                  navigate(`/workspace?q=${encodeURIComponent(e.currentTarget.value.trim())}`);
+                }
+              }}
+              className="w-full pl-12 pr-4 py-3.5 bg-[#000000] border border-[#333333] text-sm text-[#ffffff] placeholder:text-[#666666] focus:border-[#ffffff] font-mono tracking-widest transition-all outline-none"
             />
           </div>
 
@@ -142,7 +148,11 @@ export const DashboardLayout: React.FC = () => {
                 <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-[#ffffff] rounded-full border-2 border-[#000000]"></span>
               </button>
 
-              <div className="w-10 h-10 border border-[#444444] flex items-center justify-center text-[#ffffff] font-heading font-bold ml-4 cursor-pointer hover:bg-[#ffffff] hover:text-[#000000] transition-colors" title="Profile">
+              <div 
+                onClick={() => setIsProfileOpen(true)}
+                className="w-10 h-10 border border-[#444444] flex items-center justify-center text-[#ffffff] font-heading font-bold ml-4 cursor-pointer hover:bg-[#ffffff] hover:text-[#000000] transition-colors"
+                title="Profile"
+              >
                 {user?.username.charAt(0).toUpperCase()}
               </div>
             </div>
@@ -153,6 +163,13 @@ export const DashboardLayout: React.FC = () => {
         <div className="flex-1 p-10">
           <Outlet />
         </div>
+
+        {/* Profile Panel */}
+        <ProfilePanel 
+          isOpen={isProfileOpen} 
+          onClose={() => setIsProfileOpen(false)}
+          onLogout={() => { setIsProfileOpen(false); handleLogout(); }}
+        />
       </div>
     </div>
   );

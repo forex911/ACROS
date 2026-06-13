@@ -143,6 +143,53 @@ async def me(user=Depends(get_current_user)):
     return MeResponse(username=user['username'], roles=user.get('roles', []))
 
 
+@router.get('/auth/profile')
+async def profile(user=Depends(get_current_user)):
+    """
+    Returns rich profile data: user info, scan statistics, API keys.
+    """
+    from app.database.mongodb import db
+    username = user['username']
+
+    # Fetch full user doc
+    user_doc = await find_by_username(username)
+    created_at = user_doc.get('created_at', datetime.utcnow())
+    if isinstance(created_at, datetime):
+        created_at = created_at.isoformat()
+
+    # Scan statistics
+    jobs_col = db["sandbox_jobs"]
+    total_scans = await jobs_col.count_documents({})
+    threats_found = await jobs_col.count_documents({"risk_score": {"$gte": 70}})
+    completed_scans = await jobs_col.count_documents({"status": "completed"})
+    pending_scans = await jobs_col.count_documents({"status": {"$in": ["pending", "analyzing"]}})
+
+    # API Keys (redacted)
+    api_keys = []
+    for k in user_doc.get('api_keys', []):
+        key_val = k.get('key', '')
+        key_created = k.get('created_at', '')
+        if isinstance(key_created, datetime):
+            key_created = key_created.isoformat()
+        api_keys.append({
+            "prefix": key_val[:8] + '...' if len(key_val) > 8 else key_val,
+            "created_at": key_created,
+        })
+
+    return {
+        "username": username,
+        "roles": user_doc.get('roles', []),
+        "created_at": created_at,
+        "stats": {
+            "total_scans": total_scans,
+            "threats_found": threats_found,
+            "completed_scans": completed_scans,
+            "pending_scans": pending_scans,
+        },
+        "api_keys": api_keys,
+    }
+
+
 @router.post('/auth/apikey', response_model=APIKeyResponse, status_code=201)
 async def create_api_key(user=Depends(require_roles([Role.ADMIN]))):
     key = secrets.token_urlsafe(32)

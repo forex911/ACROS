@@ -36,6 +36,7 @@ async def get_analysis(file_id: str, user=Depends(get_current_user)):
         "yara_matches": job.get("yara_matches", []),
         "mitre_tactics": job.get("mitre_tactics", []),
         "iocs": job.get("iocs", []),
+        "artifacts": job.get("artifacts", {}),
         "telemetry_events": job.get("telemetry", []),
         "telemetry_count": job.get("telemetry_count", 0),
         "logs": job.get("logs", []),
@@ -58,3 +59,11 @@ async def get_analysis_telemetry(file_id: str, user=Depends(get_current_user)):
     return {
         "events": job.get("telemetry", [])
     }
+
+@router.get("/analysis/{file_id}/artifacts")
+async def get_analysis_artifacts(file_id: str, user=Depends(get_current_user)):
+    job = await db["sandbox_jobs"].find_one({"job_id": file_id}, {"artifacts": 1})
+    if not job:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+        
+    return job.get("artifacts", {})

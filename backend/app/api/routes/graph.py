@@ -19,9 +19,28 @@ async def get_job_graph(job_id: str, user=Depends(get_current_user)):
     OPTIONAL MATCH (p3:Process {job_id: $job_id})-[r4:CONNECTED_TO]->(ip:IPAddress)
     OPTIONAL MATCH (j)-[r5:EXHIBITS_TECHNIQUE]->(t:AttackTechnique)
     
+    // Artifact tree relationships
+    OPTIONAL MATCH (f1:File)-[r6:DROPPED|DOWNLOADED|EXTRACTED|CREATED]->(f2:File)
+    WHERE f1 IN collect(f) OR f2 IN collect(f) // this might not work well in neo4j, let's do path matching from the analyzed file
+    
+    // Actually, simpler: find files analyzed by the job, then find all descendants via artifact relations
+    """
+    
+    # Let's fix the query structure
+    query = """
+    MATCH (j:SandboxJob {job_id: $job_id})
+    OPTIONAL MATCH (j)-[r1:ANALYZES]->(f:File)
+    OPTIONAL MATCH (j)-[r2:SPAWNED_PROCESS]->(p:Process)
+    OPTIONAL MATCH (p1:Process {job_id: $job_id})-[r3:SPAWNED]->(p2:Process {job_id: $job_id})
+    OPTIONAL MATCH (p3:Process {job_id: $job_id})-[r4:CONNECTED_TO]->(ip:IPAddress)
+    OPTIONAL MATCH (j)-[r5:EXHIBITS_TECHNIQUE]->(t:AttackTechnique)
+    
+    // Find all files connected through artifact relationships starting from the initially analyzed file
+    OPTIONAL MATCH path=(f)-[:DROPPED|DOWNLOADED|EXTRACTED|CREATED*1..5]->(f_desc:File)
+    
     RETURN 
         collect(DISTINCT j) as jobs,
-        collect(DISTINCT f) as files,
+        collect(DISTINCT f) + collect(DISTINCT f_desc) as files,
         collect(DISTINCT p) as processes,
         collect(DISTINCT ip) as ips,
         collect(DISTINCT t) as techniques,
@@ -29,7 +48,8 @@ async def get_job_graph(job_id: str, user=Depends(get_current_user)):
         collect(DISTINCT r2) as r_spawned_process,
         collect(DISTINCT r3) as r_spawned,
         collect(DISTINCT r4) as r_connected,
-        collect(DISTINCT r5) as r_technique
+        collect(DISTINCT r5) as r_technique,
+        collect(path) as artifact_paths
     """
     
     try:
@@ -45,15 +65,24 @@ async def get_job_graph(job_id: str, user=Depends(get_current_user)):
             edges = []
             
             def process_node(n, group):
-                if n:
+                if n is not None:
                     nodes.append({"data": {"id": str(n.element_id), "group": group, **dict(n)}})
             
             def process_edge(r, label):
-                if r:
+                if r is not None:
                     edges.append({"data": {"id": str(r.element_id), "source": str(r.start_node.element_id), "target": str(r.end_node.element_id), "label": label, **dict(r)}})
 
             for n in record["jobs"]: process_node(n, "SandboxJob")
-            for n in record["files"]: process_node(n, "File")
+            
+            # Neo4j collect() might result in nested lists or nulls, especially with + operator
+            files = []
+            for item in record["files"]:
+                if isinstance(item, list):
+                    files.extend(item)
+                elif item:
+                    files.append(item)
+            
+            for n in files: process_node(n, "File")
             for n in record["processes"]: process_node(n, "Process")
             for n in record["ips"]: process_node(n, "IPAddress")
             for n in record["techniques"]: process_node(n, "AttackTechnique")
@@ -63,6 +92,12 @@ async def get_job_graph(job_id: str, user=Depends(get_current_user)):
             for r in record["r_spawned"]: process_edge(r, "SPAWNED")
             for r in record["r_connected"]: process_edge(r, "CONNECTED_TO")
             for r in record["r_technique"]: process_edge(r, "EXHIBITS_TECHNIQUE")
+            
+            # Artifact relationships are returned as lists of paths
+            for path in record["artifact_paths"]:
+                if path:
+                    for r in path.relationships:
+                        process_edge(r, getattr(r, 'type', 'RELATED_TO'))
             
             return {"nodes": nodes, "edges": edges}
             

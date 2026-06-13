@@ -39,6 +39,34 @@ def map_to_mitre(static_results, telemetry_events):
                     add_tactic("T1059.001", "PowerShell", f"Spawned: {cmd[:30]}")
                 elif "cmd" in cmd:
                     add_tactic("T1059.003", "Windows Command Shell", f"Spawned: {cmd[:30]}")
+
+            # Deobfuscation-aware mappings
+            deob_layers = data.get("deobfuscation_layers_cmdline", [])
+            if deob_layers:
+                encoding_chain = " → ".join(l.get("encoding", "") for l in deob_layers)
+                add_tactic("T1027", "Obfuscated Files or Information", f"Encoding chain detected: {encoding_chain}")
+                add_tactic("T1140", "Deobfuscate/Decode Files or Information", f"Decoded {len(deob_layers)} layer(s): {encoding_chain}")
+                if any("powershell_enc" in l.get("encoding", "") for l in deob_layers):
+                    add_tactic("T1027.010", "Command Obfuscation", "PowerShell -EncodedCommand detected")
+
+            # Run technique detection on DECODED cmdline (catches hidden commands)
+            decoded_cmd = data.get("decoded_cmdline", data.get("normalized_cmdline", ""))
+            if decoded_cmd:
+                dc = decoded_cmd.lower()
+                if any(interpreter in dc for interpreter in ["powershell", "cmd", "bash", "wscript", "cscript"]):
+                    add_tactic("T1059", "Command and Scripting Interpreter", f"Decoded execution: {dc[:30]}")
+                if "invoke-expression" in dc or "iex" in dc:
+                    add_tactic("T1059.001", "PowerShell", f"Decoded IEX: {dc[:30]}")
+                if "invoke-webrequest" in dc or "downloadstring" in dc or "downloadfile" in dc or "net.webclient" in dc:
+                    add_tactic("T1105", "Ingress Tool Transfer", f"Decoded download: {dc[:30]}")
+                if "vssadmin" in dc and "delete" in dc:
+                    add_tactic("T1490", "Inhibit System Recovery", f"Decoded vssadmin: {dc[:30]}")
+                if "whoami" in dc or "systeminfo" in dc or "ipconfig" in dc or "net user" in dc:
+                    add_tactic("T1033", "System Owner/User Discovery", f"Decoded discovery: {dc[:30]}")
+                if "schtasks" in dc or "at " in dc:
+                    add_tactic("T1053", "Scheduled Task/Job", f"Decoded persistence: {dc[:30]}")
+                if "reg add" in dc or "currentversion\\\\run" in dc:
+                    add_tactic("T1547.001", "Registry Run Keys / Startup Folder", f"Decoded persistence: {dc[:30]}")
                     
             # T1490: Inhibit System Recovery
             if "vssadmin" in cmd and "delete" in cmd and "shadows" in cmd:

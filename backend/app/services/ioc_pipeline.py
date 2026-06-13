@@ -108,6 +108,31 @@ def extract_and_store_iocs(static_results, telemetry_events):
                 for email in EMAIL_PATTERN.findall(text):
                     add_or_update_ioc("email", email, "Runtime Telemetry (output)", "Medium")
 
+        # Scan DECODED content from deobfuscation layer
+        for decoded_field in ("decoded_cmdline", "normalized_cmdline", "decoded_stdout", "decoded_stderr", "decoded_output"):
+            decoded_text = data.get(decoded_field, "")
+            if decoded_text:
+                for ip_match in re.findall(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', decoded_text):
+                    add_or_update_ioc("ip", ip_match, "Decoded Payload", "High")
+                for url_match in URL_PATTERN.findall(decoded_text):
+                    add_or_update_ioc("url", url_match, "Decoded Payload", "High")
+                    domain_match = re.search(r'https?://([^/:]+)', url_match)
+                    if domain_match:
+                        add_or_update_ioc("domain", domain_match.group(1), "Decoded Payload", "High")
+                for sha in SHA256_PATTERN.findall(decoded_text):
+                    add_or_update_ioc("sha256", sha.lower(), "Decoded Payload", "High")
+                for email in EMAIL_PATTERN.findall(decoded_text):
+                    add_or_update_ioc("email", email, "Decoded Payload", "High")
+                # Registry keys
+                for reg in re.findall(r'\b(?:HKLM|HKCU|HKCR|HKU|HKCC)\\[^\s<>"\']+', decoded_text, re.I):
+                    add_or_update_ioc("registry_key", reg, "Decoded Payload", "High")
+                # File paths
+                for fp in re.findall(r'[A-Za-z]:\\(?:[^\\\s<>"\'|?*]+\\)*[^\\\s<>"\'|?*]+', decoded_text, re.I):
+                    add_or_update_ioc("filepath", fp, "Decoded Payload", "Medium")
+                # Named pipes
+                for pipe in re.findall(r'\\\\.\\pipe\\[^\s<>"\']+', decoded_text, re.I):
+                    add_or_update_ioc("named_pipe", pipe, "Decoded Payload", "High")
+
     # Format for output
     final_iocs = []
     for val, details in iocs_dict.items():

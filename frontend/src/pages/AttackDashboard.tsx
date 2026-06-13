@@ -38,12 +38,12 @@ const AttackDashboard: React.FC = () => {
 
       {/* Matrix */}
       <motion.div
-        className="flex-1 min-h-[600px] border border-[#333333] bg-[#000000] overflow-hidden relative flex flex-col"
+        className="flex-1 min-h-[600px] border border-[#333333] bg-[#000000] relative flex flex-col"
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2, duration: 0.4, ease: "easeOut" }}
       >
-        <div className="flex-1 w-full h-full p-6 overflow-hidden">
+        <div className="flex-1 w-full h-full p-6 overflow-x-auto overflow-y-auto custom-scrollbar" data-lenis-prevent>
           <AttackMatrix />
         </div>
       </motion.div>

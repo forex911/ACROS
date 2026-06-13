@@ -150,3 +150,39 @@ class GraphIngester:
         except Exception as e:
             logger.error(f"Failed to batch-ingest IOCs to graph: {e}")
 
+    @staticmethod
+    async def ingest_artifact_tree(job_id: str, edges: List[Dict]):
+        """Ingests artifact provenance (droppers, downloads, extractions) into the graph."""
+        try:
+            async with get_neo4j_async_session() as session:
+                for edge in edges:
+                    parent_hash = edge.get("parent_sha256")
+                    child_hash = edge.get("child_sha256")
+                    rel = edge.get("relationship", "dropped").upper()
+                    
+                    if not parent_hash or not child_hash:
+                        continue
+                        
+                    # Sanitize relationship name to prevent Cypher injection
+                    if rel not in ("DROPPED", "DOWNLOADED", "EXTRACTED", "CREATED"):
+                        rel = "CREATED"
+                        
+                    q = f"""
+                    MATCH (p:File {{sha256: $parent_hash}})
+                    MERGE (c:File {{sha256: $child_hash}})
+                    ON CREATE SET 
+                        c.name = $child_filename,
+                        c.type = $child_type,
+                        c.risk = $child_risk
+                    MERGE (p)-[:{rel}]->(c)
+                    """
+                    await session.run(
+                        q, 
+                        parent_hash=parent_hash, 
+                        child_hash=child_hash,
+                        child_filename=edge.get("child_filename", ""),
+                        child_type=edge.get("child_type", "Unknown"),
+                        child_risk=edge.get("child_risk", 0)
+                    )
+        except Exception as e:
+            logger.error(f"Failed to ingest artifact tree to graph: {e}")
