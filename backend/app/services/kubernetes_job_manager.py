@@ -72,6 +72,7 @@ def create_sandbox_job(
     timeout: int = ACTIVE_DEADLINE_SECONDS,
     memory_limit: str = DEFAULT_MEMORY_LIMIT,
     cpu_limit: str = DEFAULT_CPU_LIMIT,
+    runtime_class: str = SANDBOX_RUNTIME_CLASS,
 ) -> Dict[str, Any]:
     """
     Create and submit a Kubernetes Job that executes a malware sample
@@ -169,7 +170,7 @@ def create_sandbox_job(
 
     # ---- Pod template ----------------------------------------------------
     pod_spec = k8s_client.V1PodSpec(
-        runtime_class_name=SANDBOX_RUNTIME_CLASS,
+        runtime_class_name=runtime_class,
         restart_policy="Never",
         init_containers=[init_container],
         containers=[main_container],

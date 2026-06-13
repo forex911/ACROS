@@ -1,38 +1,85 @@
 @import "tailwindcss";
 
-@theme {
-  --color-cyber-green: #00ff41;
-  --color-cyber-dark: #0d1117;
-  --color-cyber-panel: #161b22;
-  --color-cyber-border: #30363d;
-  --color-cyber-accent: #58a6ff;
-  --color-cyber-alert: #ff7b72;
-}
-
 @layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
   body {
-    background-color: var(--color-cyber-dark);
-    color: #e5e7eb;
+    background-color: #f4f6f8;
+    color: #111827;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Smooth scrolling everywhere */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Cleaner scrollbars for light theme */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 6px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
   }
 }
 
 @layer components {
-  .cyber-panel {
-    background-color: var(--color-cyber-panel);
-    border: 1px solid var(--color-cyber-border);
-    border-radius: 0.5rem;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  /* Replace cyber-panel with a modern soft card */
+  .ui-panel {
+    background-color: #ffffff;
+    border: 1px solid #f3f4f6;
+    border-radius: 1.25rem; /* Large rounded corners */
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-  .cyber-button {
-    background-color: var(--color-cyber-accent);
-    color: var(--color-cyber-dark);
-    font-weight: 700;
+
+  /* Modern button styling */
+  .ui-button {
+    background-color: #c5f37d;
+    color: #111827;
+    font-weight: 600;
     padding: 0.5rem 1rem;
-    border-radius: 0.25rem;
-    transition: all 0.2s;
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
   }
-  .cyber-button:hover {
-    opacity: 0.9;
+  .ui-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(197, 243, 125, 0.4);
+  }
+  .ui-button:active {
+    transform: scale(0.97);
+  }
+
+  /* Animated focus ring for inputs */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    border-color: #c5f37d;
+    box-shadow: 0 0 0 3px rgba(197, 243, 125, 0.2);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
 }
+
+@layer utilities {
+  .glow-accent {
+    box-shadow: 0 0 12px rgba(197, 243, 125, 0.4);
+  }
+}
+

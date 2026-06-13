@@ -4,6 +4,7 @@ import { AuthProvider } from './hooks/useAuth';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Login } from './pages/Login';
 import { DashboardLayout } from './layouts/DashboardLayout';
+
 // Lazy load pages for performance
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const AnalysisDetail = React.lazy(() => import('./pages/AnalysisDetail'));
@@ -15,11 +16,18 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <React.Suspense fallback={<div className="h-screen flex items-center justify-center bg-cyber-dark text-cyber-accent font-mono">LOADING_MODULES...</div>}>
+        <React.Suspense fallback={
+          <div className="h-screen flex items-center justify-center bg-[#f4f6f8] text-gray-600">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-8 h-8 border-2 border-gray-300 border-t-green-500 rounded-full animate-spin" />
+              <span className="tracking-wide text-sm font-medium">Loading...</span>
+            </div>
+          </div>
+        }>
           <Routes>
             <Route path="/login" element={<Login />} />
-            
-            {/* Protected SOC Routes */}
+
+            {/* Protected SOC Routes — DashboardLayout stays mounted */}
             <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
               <Route index element={<Dashboard />} />
               <Route path="analysis/:jobId" element={<AnalysisDetail />} />
@@ -38,3 +46,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+

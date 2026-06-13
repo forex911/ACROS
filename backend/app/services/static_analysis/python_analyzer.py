@@ -46,11 +46,26 @@ def analyze_python_file(file_path: str):
     has_base64 = "base64" in code.lower() or "b64decode" in code.lower()
     has_registry = "winreg" in code.lower() or "hkcu" in code.lower() or "hklm" in code.lower()
 
+    findings = []
+    
+    if uses_eval_exec:
+        findings.append({"type": "STATIC_FINDING", "rule": "EXEC_USAGE"})
+    
+    for call in suspicious_calls:
+        if "os." in call or "subprocess." in call:
+            findings.append({"type": "STATIC_FINDING", "rule": "SUBPROCESS_USAGE"})
+        elif "socket." in call or "urllib." in call or "requests." in call:
+            findings.append({"type": "STATIC_FINDING", "rule": "NETWORK_USAGE"})
+
+    if has_powershell:
+        findings.append({"type": "STATIC_FINDING", "rule": "POWERSHELL_USAGE"})
+    if has_base64:
+        findings.append({"type": "STATIC_FINDING", "rule": "BASE64_USAGE"})
+    if has_registry:
+        findings.append({"type": "STATIC_FINDING", "rule": "REGISTRY_USAGE"})
+
     return {
         "imports": list(set(imports)),
         "suspicious_calls": list(set(suspicious_calls)),
-        "uses_eval_exec": uses_eval_exec,
-        "has_powershell": has_powershell,
-        "has_base64": has_base64,
-        "has_registry": has_registry
+        "findings": findings
     }

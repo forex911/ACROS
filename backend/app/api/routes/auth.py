@@ -7,14 +7,16 @@ from app.schemas.auth_schema import UserCreate, TokenResponse, RefreshResponse, 
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
 from app.models.user_model import create_user, find_by_username, add_api_key, revoke_api_key
 from app.database.redis import redis_client
-from app.api.dependencies.auth import require_roles, get_current_user
-from app.core.config import API_KEY_HEADER
+from app.api.dependencies.auth import require_roles, get_current_user, Role
+from app.core.config import settings
+from app.core.limiter import limiter
 
 router = APIRouter()
 
 
 @router.post('/auth/register', status_code=201)
-async def register(payload: UserCreate):
+@limiter.limit("5/minute")
+async def register(request: Request, payload: UserCreate):
     existing = await find_by_username(payload.username)
     if existing:
         raise HTTPException(status_code=400, detail='user_exists')
@@ -24,7 +26,8 @@ async def register(payload: UserCreate):
 
 
 @router.post('/auth/login')
-async def login(payload: LoginRequest, response: Response):
+@limiter.limit("5/minute")
+async def login(request: Request, payload: LoginRequest, response: Response):
     user = await find_by_username(payload.username)
     if not user or not verify_password(payload.password, user.get('hashed_password', '')):
         raise HTTPException(status_code=401, detail='invalid_credentials')
@@ -40,7 +43,7 @@ async def login(payload: LoginRequest, response: Response):
     # Send refresh token as HttpOnly secure cookie — never accessible to JS
     response.set_cookie(
         'refresh_token', refresh['refresh_token'],
-        httponly=True, secure=True, samesite='lax',
+        httponly=True, secure=settings.COOKIE_SECURE, samesite='lax',
     )
     return TokenResponse(
         access_token=access['access_token'],
@@ -101,7 +104,7 @@ async def refresh(request: Request, response: Response, refresh_token: str = Non
 
     response.set_cookie(
         'refresh_token', new_refresh['refresh_token'],
-        httponly=True, secure=True, samesite='lax',
+        httponly=True, secure=settings.COOKIE_SECURE, samesite='lax',
     )
     return TokenResponse(
         access_token=new_access['access_token'],
@@ -131,7 +134,7 @@ async def logout(request: Request, response: Response, user=Depends(get_current_
     # Any refresh token issued before this timestamp is rejected on use.
     await redis_client.set(f"user_logout:{username}", str(int(time.time())))
 
-    response.delete_cookie('refresh_token')
+    response.delete_cookie('refresh_token', secure=settings.COOKIE_SECURE, samesite='lax')
     return {"status": "ok"}
 
 
@@ -140,14 +143,14 @@ async def me(user=Depends(get_current_user)):
     return MeResponse(username=user['username'], roles=user.get('roles', []))
 
 
-@router.post('/auth/apikey', response_model=APIKeyResponse)
-async def create_api_key(user=Depends(require_roles(['admin']))):
+@router.post('/auth/apikey', response_model=APIKeyResponse, status_code=201)
+async def create_api_key(user=Depends(require_roles([Role.ADMIN]))):
     key = secrets.token_urlsafe(32)
     await add_api_key(user['username'], key)
     return APIKeyResponse(key=key, created_at=str(datetime.utcnow()))
 
 
-@router.delete('/auth/apikey/{key}')
-async def delete_api_key(key: str, user=Depends(require_roles(['admin']))):
+@router.delete('/auth/apikey/{key}', status_code=204)
+async def delete_api_key(key: str, user=Depends(require_roles([Role.ADMIN]))):
     await revoke_api_key(user['username'], key)
     return {"status": "ok"}

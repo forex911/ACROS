@@ -81,6 +81,9 @@ async def get_job_timeline(job_id: str):
 @router.websocket("/ws/jobs/{job_id}/telemetry")
 async def ws_job_updates(websocket: WebSocket, job_id: str):
     await websocket.accept()
+    import logging
+    logger = logging.getLogger("websocket")
+    logger.info(f"[WS CONNECT] job_id={job_id}")
     pubsub = redis_client.pubsub()
     channel = f"job_updates:{job_id}"
     await pubsub.subscribe(channel)
@@ -100,8 +103,10 @@ async def ws_job_updates(websocket: WebSocket, job_id: str):
                     payload = {'raw': data.decode('utf-8', errors='ignore')}
             else:
                 payload = data
+            logger.info(f"[WS SEND] {payload.get('type', 'UNKNOWN')}")
             await websocket.send_json(payload)
     except WebSocketDisconnect:
+        logger.info(f"[WS DISCONNECT] job_id={job_id}")
         await pubsub.unsubscribe(channel)
     finally:
         try:

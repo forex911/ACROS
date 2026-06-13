@@ -22,7 +22,11 @@ async def save_uploaded_file(file) -> dict:
     os.makedirs(UPLOAD_DIR, exist_ok=True)
 
     file_id = str(uuid.uuid4())
-    filename = f"{file_id}_{file.filename}"
+    # Extract only the base name of the original file (prevent path traversal logic on the client side)
+    original_basename = os.path.basename(file.filename.replace('\\', '/'))
+    
+    # Store the file strictly as UUID.sample to prevent path traversal and command injection vulnerabilities
+    filename = f"{file_id}.sample"
     file_path = os.path.join(UPLOAD_DIR, filename)
 
     # Stream in 64 KiB chunks — never loads the full binary into memory
@@ -36,6 +40,6 @@ async def save_uploaded_file(file) -> dict:
     return {
         "file_id": file_id,
         "filename": filename,
-        "original_filename": file.filename,
+        "original_filename": original_basename,
         "path": file_path,
     }

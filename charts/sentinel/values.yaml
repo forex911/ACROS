@@ -1,0 +1,38 @@
+# Default values for sentinel.
+
+replicaCount:
+  backend: 2
+  frontend: 2
+  mongodb: 3
+  redis: 1
+  neo4j: 1
+  minio: 1
+
+image:
+  backend: sentinel/backend:latest
+  frontend: sentinel/frontend:latest
+  pullPolicy: IfNotPresent
+
+ingress:
+  enabled: true
+  className: "nginx"
+  host: sentinel.local
+
+sandbox:
+  runtimeClassName: gvisor
+
+resources:
+  backend:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
+  frontend:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

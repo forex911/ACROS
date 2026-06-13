@@ -1,0 +1,26 @@
+FROM ubuntu:22.04
+
+# Install Python, eBPF/BCC tools, and essential utilities
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    bpfcc-tools \
+    python3-bpfcc \
+    linux-headers-generic \
+    strace \
+    curl \
+    file \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# The python3-bpfcc package installs bcc to the system python, but just in case, we use system packages
+RUN pip3 install --no-cache-dir requests urllib3
+
+# Copy the monitor and runners directory
+COPY monitor /app/monitor
+COPY sandbox/runners /app/runners
+
+# Entrypoint definition
+ENTRYPOINT ["python3", "/app/runners/entrypoint.py"]

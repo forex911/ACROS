@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel-worker
+  namespace: sentinel-workers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sentinel-worker
+  template:
+    metadata:
+      labels:
+        app: sentinel-worker
+    spec:
+      # Enforce execution on dedicated, tainted isolated worker nodes
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: workload-type
+                operator: In
+                values:
+                - isolated-sandbox
+      tolerations:
+      - key: "sandbox"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      
+      # Enforce restricted Pod Security Standards
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10000
+        runAsGroup: 10000
+        fsGroup: 10000
+        seccompProfile:
+          type: RuntimeDefault
+      
+      containers:
+      - name: worker
+        image: ghcr.io/sentinel-ai/worker:latest
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
+        volumeMounts:
+        - name: tmp-vol
+          mountPath: /tmp
+        - name: run-vol
+          mountPath: /var/run
+      
+      volumes:
+      - name: tmp-vol
+        emptyDir: {}
+      - name: run-vol
+        emptyDir: {}

@@ -1,0 +1,52 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-sandbox
+  namespace: sandbox
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-inetsim-and-redis
+  namespace: sandbox
+spec:
+  podSelector:
+    matchLabels:
+      sandbox: "true"
+  policyTypes:
+  - Egress
+  egress:
+  # Allow DNS and HTTP(S) to INetSim Sinkhole
+  - to:
+    - podSelector:
+        matchLabels:
+          app: inetsim
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443
+  # Allow Telemetry export to Redis (assuming redis is in default namespace for this example)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: default
+      podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  # Explicitly block access to cloud metadata IP
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 169.254.169.254/32

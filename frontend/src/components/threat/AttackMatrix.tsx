@@ -27,24 +27,24 @@ export const AttackMatrix: React.FC = () => {
     refetchInterval: 5000,
   });
 
-  if (isLoading) return <div className="text-cyber-accent font-mono p-4">LOADING MATRIX...</div>;
-  if (error) return <div className="text-cyber-alert font-mono p-4">ERROR LOADING MATRIX</div>;
-  if (tactics.length === 0) return <div className="text-gray-500 font-mono p-4">No active threats detected.</div>;
+  if (isLoading) return <div className="text-gray-500 font-medium p-6">Loading Matrix...</div>;
+  if (error) return <div className="text-red-500 font-medium p-6">Error Loading Matrix</div>;
+  if (tactics.length === 0) return <div className="text-gray-500 font-medium p-6 bg-white border border-gray-100 rounded-xl">No active threats detected.</div>;
   
   return (
-    <div className="w-full h-full overflow-x-auto bg-cyber-dark text-gray-300 font-sans">
+    <div className="w-full h-full overflow-x-auto bg-gray-50 text-gray-700 font-sans p-2 rounded-xl">
       <div className="flex gap-4 p-4 min-w-max">
         {tactics.map((tactic) => (
           <div key={tactic.id} className="w-64 flex-shrink-0">
             {/* Tactic Header */}
-            <div className="bg-cyber-panel border border-cyber-border rounded-t-lg p-3 mb-2 flex items-center justify-between shadow-lg">
+            <div className="bg-white border border-gray-200 rounded-lg p-3 mb-3 flex items-center justify-between shadow-sm">
                <div>
-                  <h3 className="font-bold text-sm text-cyber-accent truncate" title={tactic.name}>
+                  <h3 className="font-bold text-sm text-gray-900 truncate" title={tactic.name}>
                      {tactic.name}
                   </h3>
-                  <span className="text-xs text-gray-500">{tactic.id}</span>
+                  <span className="text-xs text-gray-500 font-mono bg-gray-100 px-1.5 py-0.5 rounded">{tactic.id}</span>
                </div>
-               <ShieldAlert size={16} className="text-cyber-accent opacity-50" />
+               <ShieldAlert size={16} className="text-gray-400" />
             </div>
 
             {/* Techniques List */}
@@ -53,23 +53,23 @@ export const AttackMatrix: React.FC = () => {
                 <div 
                   key={technique.id} 
                   className={`
-                    p-3 border rounded-md cursor-pointer transition-all duration-200
+                    p-3 border rounded-lg cursor-pointer transition-all duration-200 shadow-sm
                     ${technique.active 
-                      ? 'bg-cyber-alert/10 border-cyber-alert text-cyber-alert shadow-[0_0_10px_rgba(255,123,114,0.2)]' 
-                      : 'bg-cyber-panel/50 border-cyber-border hover:bg-cyber-panel hover:border-gray-500'
+                      ? 'bg-red-50 border-red-200 hover:border-red-300 hover:bg-red-100' 
+                      : 'bg-white border-gray-100 hover:border-gray-300 hover:bg-gray-50'
                     }
                   `}
                   title={technique.description}
                 >
                    <div className="flex justify-between items-start mb-1">
-                      <span className="font-medium text-sm leading-tight">{technique.name}</span>
+                      <span className={`font-semibold text-sm leading-tight ${technique.active ? 'text-red-700' : 'text-gray-700'}`}>{technique.name}</span>
                    </div>
                    <div className="flex justify-between items-center mt-2">
-                      <span className="text-xs opacity-70 font-mono">{technique.id}</span>
+                      <span className={`text-xs font-mono px-1.5 py-0.5 rounded ${technique.active ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>{technique.id}</span>
                       {technique.active && (
                          <div className="flex items-center space-x-2">
-                           {technique.frequency && <span className="text-[10px] font-mono text-cyber-alert bg-cyber-alert/20 px-1 rounded">x{technique.frequency}</span>}
-                           <Activity size={12} className="animate-pulse text-cyber-alert" />
+                           {technique.frequency && <span className="text-[10px] font-bold text-red-700 bg-red-200 px-1.5 py-0.5 rounded-full">x{technique.frequency}</span>}
+                           <Activity size={14} className="animate-pulse text-red-600" />
                          </div>
                       )}
                    </div>

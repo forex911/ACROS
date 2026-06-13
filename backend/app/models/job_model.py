@@ -1,9 +1,34 @@
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
+from enum import Enum
 
 from app.database.mongodb import db
 
 jobs = db.get_collection("sandbox_jobs")
+
+class JobStatus(str, Enum):
+    QUEUED = "queued"
+    CREATED = "created"
+    BOOTING = "booting"
+    RUNNING = "running"
+    ANALYZING = "analyzing"
+    COLLECTING = "collecting"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    DESTROYED = "destroyed"
+
+# Valid state progression to prevent race conditions moving a job backwards
+STATE_WEIGHT = {
+    JobStatus.QUEUED: 0,
+    JobStatus.CREATED: 1,
+    JobStatus.BOOTING: 2,
+    JobStatus.RUNNING: 3,
+    JobStatus.ANALYZING: 4,
+    JobStatus.COLLECTING: 5,
+    JobStatus.DESTROYED: 6,
+    JobStatus.COMPLETED: 100,
+    JobStatus.FAILED: 100
+}
 
 
 async def create_job(job_id: str, filename: str, path: str, sha256: str, md5: str = None, size: int = 0, entropy: float = 0.0, extra: Optional[Dict[str, Any]] = None):
@@ -16,7 +41,7 @@ async def create_job(job_id: str, filename: str, path: str, sha256: str, md5: st
         "md5": md5,
         "size": size,
         "entropy": entropy,
-        "status": "queued",
+        "status": JobStatus.QUEUED.value,
         "created_at": now,
         "updated_at": now,
         "risk_score": None,
@@ -45,8 +70,28 @@ async def create_job(job_id: str, filename: str, path: str, sha256: str, md5: st
     return doc
 
 
-async def update_job_status(job_id: str, status: str, extra: Optional[Dict[str, Any]] = None):
-    update = {"status": status, "updated_at": datetime.utcnow()}
+async def update_job_status(job_id: str, status: Union[str, JobStatus], extra: Optional[Dict[str, Any]] = None):
+    # Enforce state machine forward-progress
+    current_job = await get_job(job_id)
+    new_status = status.value if isinstance(status, JobStatus) else status.lower()
+    
+    if current_job:
+        current_status = current_job.get("status", JobStatus.QUEUED.value)
+        # Prevent moving backwards unless transitioning to FAILED/DESTROYED
+        try:
+            curr_weight = STATE_WEIGHT.get(JobStatus(current_status), 0)
+        except ValueError:
+            curr_weight = 0
+            
+        try:
+            new_weight = STATE_WEIGHT.get(JobStatus(new_status), 0)
+            if new_weight < curr_weight and new_status not in (JobStatus.FAILED.value, JobStatus.DESTROYED.value):
+                # Ignore backward transitions (due to race conditions in async workers)
+                return
+        except ValueError:
+            pass # Invalid enum value, proceed and let it break or handle below
+
+    update = {"status": new_status, "updated_at": datetime.utcnow()}
     if extra:
         update.update(extra)
     await jobs.update_one({"job_id": job_id}, {"$set": update})
@@ -59,7 +104,7 @@ async def append_log(job_id: str, message: str):
 
 async def add_error(job_id: str, error: str):
     entry = {"ts": datetime.utcnow(), "error": error}
-    await jobs.update_one({"job_id": job_id}, {"$push": {"errors": entry}, "$set": {"updated_at": datetime.utcnow(), "status": "failed"}})
+    await jobs.update_one({"job_id": job_id}, {"$push": {"errors": entry}, "$set": {"updated_at": datetime.utcnow(), "status": JobStatus.FAILED.value}})
 
 
 async def update_metrics(job_id: str, metrics: Dict[str, Any]):

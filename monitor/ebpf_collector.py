@@ -1,19 +1,13 @@
 """
 Enterprise eBPF Telemetry Collector (Event-Driven)
-
-Replaces inefficient CPU-polling mechanisms (e.g., psutil) with 
-high-fidelity, event-driven kernel tracing. Uses BCC (BPF Compiler Collection)
-to attach hooks to `execve`, capturing every process execution reliably, 
-even short-lived malware instances.
-
-Note: In a true production environment, this is typically handled by
-a compiled daemon like Cilium Tetragon. This Python wrapper demonstrates
-the enterprise architecture for capturing syscalls asynchronously.
+Captures execve, fork, clone, file opens, and network connections.
 """
 
 import time
 import json
 import logging
+import socket
+import struct
 from typing import List, Dict, Any
 
 logger = logging.getLogger("ebpf_collector")
@@ -24,107 +18,167 @@ except ImportError:
     BPF = None
     logger.warning("BCC/eBPF not installed on host. Running in fallback simulation mode.")
 
-# --- eBPF C Program for execve interception ---
+# --- eBPF C Program ---
 EBPF_PROGRAM = """
 #include <uapi/linux/ptrace.h>
 #include <linux/sched.h>
 #include <linux/fs.h>
+#include <net/sock.h>
+#include <bcc/proto.h>
 
-struct data_t {
+struct event_t {
     u32 pid;
     u32 ppid;
     u32 uid;
+    u32 event_type; // 1=execve, 2=fork/clone, 3=openat, 4=connect
     char comm[TASK_COMM_LEN];
-    char filename[128];
+    char arg1[256];
+    u32 dest_ip;
+    u16 dest_port;
 };
 
 BPF_PERF_OUTPUT(events);
 
-int kprobe__sys_execve(struct pt_regs *ctx, const char __user *filename, const char __user *const __user *argv, const char __user *const __user *envp) {
-    struct data_t data = {};
-    
-    data.pid = bpf_get_current_pid_tgid() >> 32;
-    data.uid = bpf_get_current_uid_gid() & 0xFFFFFFFF;
-    
+// 1: execve
+int syscall__execve(struct pt_regs *ctx, const char __user *filename) {
+    struct event_t event = {};
+    event.pid = bpf_get_current_pid_tgid() >> 32;
+    event.uid = bpf_get_current_uid_gid() & 0xFFFFFFFF;
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-    data.ppid = task->real_parent->tgid;
+    event.ppid = task->real_parent->tgid;
+    event.event_type = 1;
+    bpf_get_current_comm(&event.comm, sizeof(event.comm));
+    bpf_probe_read_user_str(&event.arg1, sizeof(event.arg1), filename);
+    events.perf_submit(ctx, &event, sizeof(event));
+    return 0;
+}
+
+// 2: clone/fork
+int syscall__clone(struct pt_regs *ctx) {
+    struct event_t event = {};
+    event.pid = bpf_get_current_pid_tgid() >> 32;
+    event.uid = bpf_get_current_uid_gid() & 0xFFFFFFFF;
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    event.ppid = task->real_parent->tgid;
+    event.event_type = 2;
+    bpf_get_current_comm(&event.comm, sizeof(event.comm));
+    events.perf_submit(ctx, &event, sizeof(event));
+    return 0;
+}
+
+// 3: openat
+int syscall__openat(struct pt_regs *ctx, int dfd, const char __user *filename) {
+    struct event_t event = {};
+    event.pid = bpf_get_current_pid_tgid() >> 32;
+    event.uid = bpf_get_current_uid_gid() & 0xFFFFFFFF;
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    event.ppid = task->real_parent->tgid;
+    event.event_type = 3;
+    bpf_get_current_comm(&event.comm, sizeof(event.comm));
+    bpf_probe_read_user_str(&event.arg1, sizeof(event.arg1), filename);
+    events.perf_submit(ctx, &event, sizeof(event));
+    return 0;
+}
+
+// 4: connect (ipv4)
+int kprobe__tcp_v4_connect(struct pt_regs *ctx, struct sock *sk) {
+    struct event_t event = {};
+    event.pid = bpf_get_current_pid_tgid() >> 32;
+    event.uid = bpf_get_current_uid_gid() & 0xFFFFFFFF;
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    event.ppid = task->real_parent->tgid;
+    event.event_type = 4;
+    bpf_get_current_comm(&event.comm, sizeof(event.comm));
     
-    bpf_get_current_comm(&data.comm, sizeof(data.comm));
-    bpf_probe_read_user_str(&data.filename, sizeof(data.filename), filename);
+    u32 daddr = sk->__sk_common.skc_daddr;
+    u16 dport = sk->__sk_common.skc_dport;
     
-    events.perf_submit(ctx, &data, sizeof(data));
+    event.dest_ip = daddr;
+    event.dest_port = ntohs(dport);
+    
+    events.perf_submit(ctx, &event, sizeof(event));
     return 0;
 }
 """
 
 class EBPFCollector:
-    def __init__(self, target_pid: int = None):
+    def __init__(self, target_pid: int = None, telemetry_manager=None):
         self.target_pid = target_pid
-        self.events: List[Dict[str, Any]] = []
+        self.telemetry_manager = telemetry_manager
         self.bpf = None
         
         if BPF:
             try:
                 self.bpf = BPF(text=EBPF_PROGRAM)
+                
+                # Attach kprobes
+                execve_fnname = self.bpf.get_syscall_fnname("execve")
+                self.bpf.attach_kprobe(event=execve_fnname, fn_name="syscall__execve")
+                
+                clone_fnname = self.bpf.get_syscall_fnname("clone")
+                self.bpf.attach_kprobe(event=clone_fnname, fn_name="syscall__clone")
+                
+                # fork is often implemented via clone, but we can hook fork too if needed
+                try:
+                    fork_fnname = self.bpf.get_syscall_fnname("fork")
+                    self.bpf.attach_kprobe(event=fork_fnname, fn_name="syscall__clone")
+                except Exception:
+                    pass
+                
+                openat_fnname = self.bpf.get_syscall_fnname("openat")
+                self.bpf.attach_kprobe(event=openat_fnname, fn_name="syscall__openat")
+                
+                # tcp_v4_connect is hooked directly via kprobe__ prefix in C code
+                
                 self.bpf["events"].open_perf_buffer(self._perf_event_callback)
-                logger.info("Successfully attached eBPF kprobes for execve tracking.")
+                logger.info("Successfully attached eBPF kprobes.")
             except Exception as e:
                 logger.error(f"Failed to compile/attach eBPF program: {e}")
                 self.bpf = None
 
     def _perf_event_callback(self, cpu, data, size):
-        """Asynchronous callback triggered by kernel when execve occurs."""
         if not self.bpf:
             return
             
         event = self.bpf["events"].event(data)
         
-        # Filter for target sandbox pid tree if specified
         if self.target_pid and event.ppid != self.target_pid and event.pid != self.target_pid:
+            # Note: in a real sandbox, you'd track process trees.
             return
 
-        filename = event.filename.decode('utf-8', 'replace')
         comm = event.comm.decode('utf-8', 'replace')
+        arg1 = event.arg1.decode('utf-8', 'replace') if event.event_type in [1, 3] else ""
         
-        evt_dict = {
-            "timestamp": time.time(),
-            "event_type": "process_execution",
-            "source": "ebpf",
-            "details": {
-                "pid": event.pid,
-                "ppid": event.ppid,
-                "uid": event.uid,
-                "executable": filename,
-                "command_comm": comm
-            }
+        process_info = {
+            "pid": event.pid,
+            "ppid": event.ppid,
+            "uid": event.uid,
+            "comm": comm
         }
         
-        self.events.append(evt_dict)
-        if self._is_suspicious(filename, comm):
-            logger.warning(f"Suspicious eBPF Exec Event: {json.dumps(evt_dict)}")
+        metadata = {}
+        event_type = "UNKNOWN"
+        
+        if event.event_type == 1:
+            event_type = "PROCESS_EXEC"
+            metadata = {"filename": arg1}
+        elif event.event_type == 2:
+            event_type = "PROCESS_CLONE"
+        elif event.event_type == 3:
+            event_type = "FILE_OPEN"
+            metadata = {"filename": arg1}
+        elif event.event_type == 4:
+            event_type = "NETWORK_CONNECT"
+            ip_str = socket.inet_ntoa(struct.pack("<L", event.dest_ip))
+            metadata = {
+                "dest_ip": ip_str,
+                "dest_port": event.dest_port
+            }
 
-    def _is_suspicious(self, filename: str, comm: str) -> bool:
-        suspicious_keywords = ['powershell', 'cmd.exe', 'wscript', 'cscript', 'bash', 'sh', 'curl', 'wget']
-        cmd_str = f"{filename} {comm}".lower()
-        return any(k in cmd_str for k in suspicious_keywords)
+        if self.telemetry_manager:
+            self.telemetry_manager.emit_event(event_type, process_info, metadata)
 
-    def poll(self) -> List[Dict[str, Any]]:
-        """
-        To be called periodically (e.g., in an asyncio loop) to drain the 
-        perf ring buffer. Does NOT iterate all processes.
-        """
+    def poll(self):
+        """Drains the kernel perf buffer efficiently."""
         if self.bpf:
-            # Drains the kernel perf buffer efficiently
-            self.bpf.perf_buffer_poll(timeout=10)
-        else:
-            # Fallback for environments lacking BCC
-            pass
-            
-        # Return a snapshot and clear local buffer
-        current_events = list(self.events)
-        self.events.clear()
-        return current_events
-
-    def get_events(self) -> List[Dict[str, Any]]:
-        """Used by the monitor service to retrieve historically buffered events."""
-        return self.events
+            self.bpf.perf_buffer_poll(timeout=100)

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any, List
 from pydantic import BaseModel
 from app.database.mongodb import db
-from app.api.dependencies.auth import require_roles
+from app.api.dependencies.auth import require_roles, Role
 from bson import ObjectId
 
 router = APIRouter()
@@ -14,7 +14,7 @@ class IntegrationCreate(BaseModel):
     token: str = ""
 
 @router.post("/integrations", status_code=201)
-async def create_integration(payload: IntegrationCreate, user=Depends(require_roles(["admin"]))):
+async def create_integration(payload: IntegrationCreate, user=Depends(require_roles([Role.ADMIN]))):
     """
     Registers a new SIEM or webhook integration target for alerts.
     """
@@ -28,7 +28,7 @@ async def create_integration(payload: IntegrationCreate, user=Depends(require_ro
     return {"id": str(result.inserted_id), "status": "created"}
 
 @router.get("/integrations", response_model=List[Dict[str, Any]])
-async def get_integrations(user=Depends(require_roles(["admin"]))):
+async def get_integrations(user=Depends(require_roles([Role.ADMIN]))):
     """Lists configured SIEM integrations."""
     if db is None:
         raise HTTPException(status_code=500, detail="Database not initialized")
@@ -44,7 +44,7 @@ async def get_integrations(user=Depends(require_roles(["admin"]))):
     return results
 
 @router.delete("/integrations/{integration_id}")
-async def delete_integration(integration_id: str, user=Depends(require_roles(["admin"]))):
+async def delete_integration(integration_id: str, user=Depends(require_roles([Role.ADMIN]))):
     """Removes a SIEM integration."""
     if db is None:
         raise HTTPException(status_code=500, detail="Database not initialized")

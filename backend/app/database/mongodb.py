@@ -1,18 +1,20 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 import pymongo
 import logging
-from app.core.config import MONGO_URI
+from app.core.config import DATABASE_NAME, MONGO_URI
 
 logger = logging.getLogger(__name__)
 
-client = AsyncIOMotorClient(MONGO_URI)
-db = client["sentinel_ai"]
+client = AsyncIOMotorClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+db = client[DATABASE_NAME]
 
 async def init_db():
     """
     Initialize database indexes and TTL policies.
     """
     try:
+        await client.admin.command("ping")
+
         # Users collection
         await db.users.create_index("username", unique=True)
         

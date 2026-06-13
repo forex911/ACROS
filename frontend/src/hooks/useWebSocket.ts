@@ -1,98 +1,147 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from './useAuth';
 
 const MAX_MESSAGES = 1000;
+const RECONNECT_DELAY = 3000;
+
+type TelemetryValue = string | number | boolean | null | undefined;
+type TelemetryMessage = {
+  type?: string;
+  severity?: string;
+  timestamp?: string | number;
+  data?: TelemetryValue | Record<string, TelemetryValue>;
+};
 
 export const useWebSocket = (url: string) => {
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<TelemetryMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const ws = useRef<WebSocket | null>(null);
-  
-  // Use a mutable ref to accumulate incoming messages rapidly
-  // without triggering a React re-render for every single event.
-  const messageBuffer = useRef<any[]>([]);
+
+  const messageBuffer = useRef<TelemetryMessage[]>([]);
   const rafRef = useRef<number | null>(null);
-  const reconnectTimeout = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isUnmounted = useRef(false);
-  
+
   const { user } = useAuth();
-  
-  const connect = useCallback(() => {
-    if (!user || !url) return;
-    
-    // In production, token should be passed securely, e.g. via ticket or wss headers
-    const token = localStorage.getItem('access_token');
-    const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:8000'}${url}?token=${token}`;
-    
-    ws.current = new WebSocket(wsUrl);
 
-    ws.current.onopen = () => {
-      setIsConnected(true);
-      console.log(`[WS] Connected to ${url}`);
-    };
+  const closeSocket = useCallback(() => {
+    if (reconnectTimeout.current) {
+      clearTimeout(reconnectTimeout.current);
+      reconnectTimeout.current = null;
+    }
 
-    ws.current.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        messageBuffer.current.push(data);
-      } catch (e) {
-        console.error('Failed to parse WS message', e);
+    if (ws.current) {
+      ws.current.onopen = null;
+      ws.current.onmessage = null;
+      ws.current.onerror = null;
+      ws.current.onclose = null;
+      if (ws.current.readyState === WebSocket.OPEN || ws.current.readyState === WebSocket.CONNECTING) {
+        ws.current.close();
       }
-    };
-
-    ws.current.onclose = () => {
-      setIsConnected(false);
-      console.log(`[WS] Disconnected from ${url}`);
-      // Auto reconnect only if not unmounted
-      if (!isUnmounted.current) {
-        reconnectTimeout.current = setTimeout(connect, 3000);
-      }
-    };
-  }, [url, user]);
+      ws.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     isUnmounted.current = false;
+    closeSocket();
+    queueMicrotask(() => {
+      if (!isUnmounted.current) {
+        setIsConnected(false);
+      }
+    });
+
+    const token = localStorage.getItem('access_token');
+    if (!user || !url || !token) return;
+
+    const connect = () => {
+      if (isUnmounted.current) return;
+
+      if (ws.current && (ws.current.readyState === WebSocket.OPEN || ws.current.readyState === WebSocket.CONNECTING)) {
+        return;
+      }
+
+      const wsBaseUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+      const separator = url.includes('?') ? '&' : '?';
+      const wsUrl = `${wsBaseUrl}${url}${separator}token=${encodeURIComponent(token)}`;
+
+      try {
+        ws.current = new WebSocket(wsUrl);
+      } catch (e) {
+        console.error('[WS] Failed to create WebSocket:', e);
+        if (!isUnmounted.current) {
+          reconnectTimeout.current = setTimeout(connect, RECONNECT_DELAY);
+        }
+        return;
+      }
+
+      ws.current.onopen = () => {
+        if (!isUnmounted.current) {
+          setIsConnected(true);
+          console.log('WS OPEN');
+          console.log(`[WS] Connected to ${url}`);
+        }
+      };
+
+      ws.current.onmessage = (event) => {
+        console.log('WS MESSAGE', event);
+        try {
+          const data = JSON.parse(event.data) as TelemetryMessage;
+          messageBuffer.current.push(data);
+        } catch (e) {
+          console.error('[WS] Failed to parse message', e);
+        }
+      };
+
+      ws.current.onerror = (event) => {
+        console.warn('[WS] Error on', url, event);
+      };
+
+      ws.current.onclose = () => {
+        console.log('WS CLOSED');
+        ws.current = null;
+        if (!isUnmounted.current) {
+          setIsConnected(false);
+          console.log(`[WS] Disconnected from ${url}`);
+          reconnectTimeout.current = setTimeout(connect, RECONNECT_DELAY);
+        }
+      };
+    };
+
     connect();
+
     return () => {
       isUnmounted.current = true;
-      if (reconnectTimeout.current) {
-        clearTimeout(reconnectTimeout.current);
-      }
-      if (ws.current) {
-        ws.current.close();
-      }
+      closeSocket();
     };
-  }, [connect]);
+  }, [closeSocket, url, user]);
 
-  // Request Animation Frame loop to drain the buffer into React state
-  // at most once per frame (16ms), preventing UI freeze during telemetry storms.
+  // RAF loop to drain message buffer into React state (max once per frame)
   useEffect(() => {
     const drainBuffer = () => {
       if (messageBuffer.current.length > 0) {
-        // Take a snapshot of the buffer and clear it
         const newMessages = [...messageBuffer.current];
         messageBuffer.current = [];
-        
+
         setMessages((prev) => {
-          // Keep only the latest MAX_MESSAGES to prevent DOM/memory bloat
           const combined = [...prev, ...newMessages];
-          return combined.length > MAX_MESSAGES 
-            ? combined.slice(combined.length - MAX_MESSAGES) 
+          return combined.length > MAX_MESSAGES
+            ? combined.slice(combined.length - MAX_MESSAGES)
             : combined;
         });
       }
       rafRef.current = requestAnimationFrame(drainBuffer);
     };
-    
+
     rafRef.current = requestAnimationFrame(drainBuffer);
-    
+
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, []);
 
-  const sendMessage = (msg: any) => {
-    if (ws.current && isConnected) {
+  const sendMessage = (msg: unknown) => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify(msg));
     }
   };

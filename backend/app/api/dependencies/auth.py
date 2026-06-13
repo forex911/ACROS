@@ -5,9 +5,15 @@ from typing import List
 from app.core.security import decode_token
 from app.database.redis import redis_client
 from app.models.user_model import find_by_username
-from app.core.config import API_KEY_HEADER
+from app.core.config import settings
 from fastapi import Header
 from app.models.user_model import users
+from enum import Enum
+
+class Role(str, Enum):
+    ADMIN = "admin"
+    ANALYST = "analyst"
+    USER = "user"
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -21,7 +27,7 @@ async def _is_token_revoked(jti: str) -> bool:
 
 async def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
     # Support API key header as alternative auth mechanism
-    api_key = request.headers.get(API_KEY_HEADER)
+    api_key = request.headers.get(settings.API_KEY_HEADER)
     if api_key:
         user = await users.find_one({"api_keys.key": api_key}, projection={"_id": False})
         if not user:
@@ -45,10 +51,12 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
     return user
 
 
-def require_roles(roles: List[str]):
+def require_roles(roles: List[Role]):
     async def _validator(user=Depends(get_current_user)):
         user_roles = user.get('roles', [])
-        if not any(r in user_roles for r in roles):
+        # Check against enum values
+        allowed_roles = [r.value for r in roles]
+        if not any(r in allowed_roles for r in user_roles):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="insufficient_role")
         return user
 

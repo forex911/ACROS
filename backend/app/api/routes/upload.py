@@ -13,15 +13,15 @@ Upload flow:
 import asyncio
 import os
 import logging
-
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Request
 from starlette.status import HTTP_202_ACCEPTED
+from app.core.limiter import limiter
 
 from app.utils.file_utils import save_uploaded_file
 from app.utils.hash_utils import calculate_sha256
 from app.models.job_model import create_job
 from app.utils.object_store import upload_file, generate_presigned_url
-from app.core.config import S3_BUCKET, S3_PRESIGNED_EXPIRATION
+from app.core.config import settings
 from app.api.dependencies.auth import get_current_user
 from app.services.report_generator import generate_report_pipeline
 import shutil
@@ -32,7 +32,9 @@ router = APIRouter()
 
 
 @router.post("/upload", status_code=HTTP_202_ACCEPTED)
+@limiter.limit("10/minute")
 async def upload_artifact(
+    request: Request,
     file: UploadFile = File(...),
     user=Depends(get_current_user),
 ):
@@ -45,7 +47,30 @@ async def upload_artifact(
       - S3 upload runs in a thread pool
     """
 
-    # ── 1. Stream-write artifact to temp storage (async) ──────────────────
+    # ── 1. Validate File Size ────────────────────────────────────────────────
+    if file.size and file.size > settings.MAX_UPLOAD_SIZE_BYTES:
+        raise HTTPException(status_code=413, detail="File too large. Maximum size is 100MB.")
+
+    # ── 2. Validate File Type & Signature ────────────────────────────────────
+    _, ext = os.path.splitext(file.filename)
+    if ext.lower() not in settings.ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"File extension {ext} not allowed.")
+
+    # Validate Magic Bytes (MIME)
+    import magic
+    # Read the first 2048 bytes for magic signature detection
+    header = await file.read(2048)
+    await file.seek(0)  # Reset cursor for actual save
+    
+    mime_type = magic.from_buffer(header, mime=True)
+    # Basic protection against zip bombs masquerading as executables etc.
+    if mime_type not in ["application/x-dosexec", "text/x-python", "text/plain", "application/javascript", "text/x-shellscript"]:
+         logger.warning(f"Suspicious MIME type detected: {mime_type} for file {file.filename}")
+         # We allow it through if the extension matched for sandbox detonation, 
+         # but we log it. If you want strict enforcement:
+         # raise HTTPException(status_code=400, detail="Invalid file signature")
+
+    # ── 2. Stream-write artifact to temp storage (async) ──────────────────
     try:
         saved_file = await save_uploaded_file(file)
     except Exception as exc:
@@ -58,28 +83,23 @@ async def upload_artifact(
         # ── 2. Hash in thread pool (non-blocking) ────────────────────────
         sha256 = await calculate_sha256(local_path)
 
-        # ── 3. Upload to MinIO/S3 in thread pool (non-blocking) ──────────
+        # ── 4. Upload to MinIO/S3 in thread pool (non-blocking) ──────────
         object_key = f"{saved_file['file_id']}/{saved_file['filename']}"
-        try:
-            from app.core.config import S3_ACCESS_KEY
-            if not S3_ACCESS_KEY:
-                raise ValueError("S3_ACCESS_KEY not configured")
-                
-            upload_meta = await asyncio.to_thread(
-                upload_file, local_path, S3_BUCKET, object_key
-            )
+        
+        if not settings.S3_ACCESS_KEY:
+            raise ValueError("S3_ACCESS_KEY not configured")
+            
+        upload_meta = await asyncio.to_thread(
+            upload_file, local_path, settings.S3_BUCKET, object_key
+        )
 
-            # ── 4. Generate presigned URL for distributed workers ────────────
-            presigned = await asyncio.to_thread(
-                generate_presigned_url,
-                upload_meta['bucket'],
-                upload_meta['key'],
-                S3_PRESIGNED_EXPIRATION,
-            )
-        except Exception as e:
-            logger.warning(f"Skipping S3 upload (running in hybrid/local mode): {e}")
-            upload_meta = {'bucket': S3_BUCKET, 'key': object_key, 'size': os.path.getsize(local_path)}
-            presigned = "http://localhost/dummy-presigned-url"
+        # ── 5. Generate presigned URL for distributed workers ────────────
+        presigned = await asyncio.to_thread(
+            generate_presigned_url,
+            upload_meta['bucket'],
+            upload_meta['key'],
+            settings.S3_PRESIGNED_EXPIRATION,
+        )
 
         # ── 5. Persist job record in MongoDB ─────────────────────────────
         extra = {
@@ -106,14 +126,22 @@ async def upload_artifact(
         )
 
         # ── 6. Trigger Real Pipeline ───
+        from app.models.job_model import append_log
+        await append_log(saved_file["file_id"], f"[Upload API] Artifact '{saved_file['original_filename']}' accepted into secure vault.")
         
         # We need to keep the file alive for the pipeline. We will copy it to a persistent temp location
         # or just await the pipeline synchronously for simplicity in this prototype.
         # But to keep the upload endpoint fast, we'll run it in background and the pipeline will clean it up.
-        persistent_path = local_path + ".sandbox"
+        _, ext = os.path.splitext(saved_file["original_filename"])
+        persistent_path = local_path + ext
         shutil.copy(local_path, persistent_path)
         
+        from opentelemetry import context
+        
+        current_context = context.get_current()
+        
         async def run_and_clean():
+            token = context.attach(current_context)
             try:
                 await generate_report_pipeline(saved_file["file_id"], persistent_path, saved_file["filename"])
             except Exception as e:
@@ -121,6 +149,7 @@ async def upload_artifact(
                 from app.models.job_model import update_job_status
                 await update_job_status(saved_file["file_id"], "failed", {"error": str(e)})
             finally:
+                context.detach(token)
                 try:
                     os.remove(persistent_path)
                 except OSError:

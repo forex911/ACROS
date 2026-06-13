@@ -7,7 +7,7 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole?
   const location = useLocation();
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-screen text-cyber-accent">Loading...</div>;
+    return <div className="flex items-center justify-center h-screen text-gray-500 font-medium">Loading...</div>;
   }
 
   if (!isAuthenticated) {

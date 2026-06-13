@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sandbox-egress-deny-internal
+  namespace: sentinel-sandbox
+spec:
+  podSelector: {} # Applies to all pods in the sentinel-sandbox namespace
+  policyTypes:
+  - Egress
+  egress:
+  # Allow DNS resolution
+  - ports:
+    - port: 53
+      protocol: UDP
+    - port: 53
+      protocol: TCP
+  # Allow outbound internet traffic, but explicitly deny internal cluster/VPC IPs
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16

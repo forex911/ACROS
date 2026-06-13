@@ -17,6 +17,31 @@ def send_telemetry(job_id, event_type, data):
     }
     print(json.dumps(msg), flush=True)
 
+def instrument_socket(job_id):
+    original_gethostbyname = socket.gethostbyname
+    def monitored_gethostbyname(host):
+        send_telemetry(job_id, "DNS_QUERY", {"domain": host})
+        return original_gethostbyname(host)
+    socket.gethostbyname = monitored_gethostbyname
+
+    original_getaddrinfo = socket.getaddrinfo
+    def monitored_getaddrinfo(host, port, *args, **kwargs):
+        if host and isinstance(host, str):
+            send_telemetry(job_id, "DNS_QUERY", {"domain": host})
+        return original_getaddrinfo(host, port, *args, **kwargs)
+    socket.getaddrinfo = monitored_getaddrinfo
+
+    original_connect = socket.socket.connect
+    def monitored_connect(self, address):
+        if isinstance(address, tuple) and len(address) >= 2:
+            ip, port = address[:2]
+            send_telemetry(job_id, "SOCKET_CONNECT", {"dest_ip": ip, "dest_port": port, "protocol": "TCP"})
+        elif isinstance(address, str):
+            send_telemetry(job_id, "SOCKET_CONNECT", {"dest_ip": address, "dest_port": 0, "protocol": "UNIX"})
+        return original_connect(self, address)
+    socket.socket.connect = monitored_connect
+
+
 def audit_hook(event, args):
     job_id = os.environ.get("SENTINEL_JOB_ID", "unknown")
     
@@ -63,9 +88,16 @@ def audit_hook(event, args):
                     send_telemetry(job_id, "FILE_WRITE", {"path": file_path})
                     
     # Eval/Exec
+    elif event == "exec":
+        send_telemetry(job_id, "EXECUTION", {"type": "exec", "target": str(args[0])[:100]})
     elif event == "compile":
-        # Can indicate eval/exec of dynamic code
-        pass
+        source = args[0]
+        if isinstance(source, bytes):
+            source = source.decode('utf-8', errors='ignore')
+        elif not isinstance(source, str):
+            source = str(source)
+        if len(source) > 0 and source != "<module>":
+            send_telemetry(job_id, "EXECUTION", {"type": "compile", "target": source[:100]})
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
@@ -78,6 +110,7 @@ if __name__ == "__main__":
     os.environ["SENTINEL_JOB_ID"] = job_id
     
     sys.addaudithook(audit_hook)
+    instrument_socket(job_id)
     
     send_telemetry(job_id, "STATUS_CHANGE", {"status": "analyzing"})
     send_telemetry(job_id, "PROCESS_CREATE", {"cmdline": f"python {target_script}"})

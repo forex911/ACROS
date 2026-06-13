@@ -30,7 +30,11 @@ def extract_strings(file_path: str):
     raw_domains = DOMAIN_PATTERN.findall(text_blob)
     
     # Filter aggressively to avoid matching filenames like "app.py" or "main.c" or typical windows file paths
-    bad_extensions = ('.exe', '.dll', '.sys', '.py', '.c', '.h', '.txt', '.log', '.dat', '.json', '.yaml', '.yml', '.md', '.png', '.jpg', '.jpeg', '.gif', '.zip', '.tar', '.gz', '.rar')
+    bad_extensions = (
+        '.exe', '.dll', '.sys', '.py', '.c', '.h', '.txt', '.log', '.dat', '.json', '.yaml', '.yml', 
+        '.md', '.png', '.jpg', '.jpeg', '.gif', '.zip', '.tar', '.gz', '.rar',
+        '.run', '.gethostbyname', '.socket', '.system', '.request', '.urlopen', '.connect'
+    )
     domains = list(set([d for d in raw_domains if not d.lower().endswith(bad_extensions) and "/" not in d and "\\" not in d and len(d) > 4]))
 
     # Filter out common local IPs

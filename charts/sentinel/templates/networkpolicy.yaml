@@ -1,0 +1,95 @@
+---
+# -----------------------------------------------------------------------------
+# Default Deny-All Policy for Sandbox Namespace
+# -----------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: sentinel-sandbox
+spec:
+  podSelector: {} # Selects all pods in this namespace
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: [] # Drop all inbound traffic
+  egress: []  # Drop all outbound traffic
+
+---
+# -----------------------------------------------------------------------------
+# Allow DNS Resolution for Sandbox Pods
+# Required to resolve the internal S3 endpoint (minio.sentinel-storage.svc.cluster.local)
+# -----------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-resolution
+  namespace: sentinel-sandbox
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+# -----------------------------------------------------------------------------
+# Allow Sandbox Pods to Egress ONLY to Internal MinIO (Storage)
+# -----------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-to-storage
+  namespace: sentinel-sandbox
+spec:
+  podSelector:
+    matchLabels:
+      app: sentinel-sandbox
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: sentinel-storage
+          podSelector:
+            matchLabels:
+              app: minio
+      ports:
+        - protocol: TCP
+          port: 9000
+
+---
+# -----------------------------------------------------------------------------
+# Allow Sandbox Pods to Egress ONLY to Internal Redis (Results)
+# -----------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-to-redis
+  namespace: sentinel-sandbox
+spec:
+  podSelector:
+    matchLabels:
+      app: sentinel-sandbox
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: sentinel-backend
+          podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - protocol: TCP
+          port: 6379

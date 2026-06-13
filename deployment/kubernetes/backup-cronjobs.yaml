@@ -1,0 +1,51 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mongodb-backup
+  namespace: default
+spec:
+  schedule: "0 2 * * *" # Run at 2 AM every day
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: mongo-backup
+            image: mongo:6.0
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting MongoDB backup..."
+              mongodump --uri="mongodb://mongodb-service:27017/sentinel_ai" --archive=/tmp/mongodb_backup.gz --gzip
+              echo "Uploading to MinIO..."
+              curl -T /tmp/mongodb_backup.gz "http://minio-service:9000/backups/mongodb_$(date +%Y%m%d).gz" -H "x-amz-acl: private" -u "minioadmin:minioadmin"
+              echo "Backup complete."
+          restartPolicy: OnFailure
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: neo4j-backup
+  namespace: default
+spec:
+  schedule: "0 3 * * *" # Run at 3 AM every day
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: neo4j-backup
+            image: neo4j:5.5.0
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting Neo4j backup..."
+              neo4j-admin database backup neo4j --to-path=/tmp/neo4j_backup
+              tar -czf /tmp/neo4j_backup.tar.gz -C /tmp/neo4j_backup .
+              echo "Uploading to MinIO..."
+              curl -T /tmp/neo4j_backup.tar.gz "http://minio-service:9000/backups/neo4j_$(date +%Y%m%d).tar.gz" -u "minioadmin:minioadmin"
+              echo "Backup complete."
+          restartPolicy: OnFailure

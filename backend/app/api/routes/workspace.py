@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any, List
 from pydantic import BaseModel
+from datetime import datetime
 from app.models.case_model import create_case, list_cases, get_case, add_note, pin_artifact
+from app.database.mongodb import db
 from app.api.dependencies.auth import get_current_user
 
 router = APIRouter()
@@ -16,6 +18,46 @@ class NoteCreate(BaseModel):
 class ArtifactPin(BaseModel):
     type: str
     value: str
+
+
+@router.get("/workspace/jobs")
+async def list_workspace_jobs(user=Depends(get_current_user)):
+    """
+    Returns all sandbox analysis jobs for the Workspace view,
+    sorted by most recent first.
+    """
+    jobs_collection = db["sandbox_jobs"]
+    cursor = jobs_collection.find(
+        {},
+        projection={
+            "_id": False,
+            "job_id": True,
+            "filename": True,
+            "status": True,
+            "risk_score": True,
+            "created_at": True,
+            "sha256": True,
+        }
+    ).sort("created_at", -1).limit(50)
+
+    jobs = await cursor.to_list(length=50)
+
+    formatted = []
+    for job in jobs:
+        created = job.get("created_at")
+        if isinstance(created, datetime):
+            created = created.isoformat()
+        formatted.append({
+            "id": job.get("job_id", ""),
+            "filename": job.get("filename", "unknown"),
+            "status": job.get("status", "unknown"),
+            "risk_score": job.get("risk_score") or 0,
+            "created_at": created or datetime.utcnow().isoformat(),
+            "sha256": job.get("sha256", ""),
+        })
+
+    return formatted
+
 
 @router.post("/cases", status_code=201)
 async def create_new_case(payload: CaseCreate, user=Depends(get_current_user)):
