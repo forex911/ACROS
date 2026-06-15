@@ -332,7 +332,7 @@ The frontend will be available at **http://localhost:5173**.
 | `GET` | `/metrics` | Prometheus metrics endpoint |
 | `GET` | `/health` | Health check |
 
-> Full API documentation: [`docs/api/endpoints.md`](docs/api/endpoints.md)
+> Full API documentation: [`docs/api/`](docs/api/)
 
 ---
 
