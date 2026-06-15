@@ -259,8 +259,8 @@ sentinel-ai/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-org/sentinel-ai.git
-cd sentinel-ai
+git clone https://github.com/forex911/sentinel.git
+cd sentinel
 ```
 
 ### 2. Start infrastructure services
