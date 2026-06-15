@@ -56,7 +56,7 @@ Sentinel-AI is a cloud-native, distributed malware analysis platform that combin
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                         User / API Client                           │
+│                         User / API Client                            │
 └────────────────────────────────┬─────────────────────────────────────┘
                                  │  Upload / Query
                                  ▼
@@ -66,46 +66,46 @@ Sentinel-AI is a cloud-native, distributed malware analysis platform that combin
                                  │
             ┌────────────────────┼────────────────────┐
             ▼                    ▼                    ▼
-   ┌─────────────┐     ┌─────────────┐     ┌─────────────────┐
-   │   Frontend   │     │   FastAPI    │     │   WebSocket     │
-   │  React/Vite  │     │   Backend    │     │   Telemetry     │
-   └─────────────┘     └──────┬──────┘     └────────┬────────┘
+   ┌─────────────┐      ┌─────────────┐     ┌─────────────────┐
+   │   Frontend  │      │    FastAPI  │     │   WebSocket     │
+   │ React/Vite  │      │   Backend   │     │   Telemetry     │
+   └─────────────┘      └──────┬──────┘     └────────┬────────┘
                                │                     │
           ┌────────────┬───────┼───────┬─────────────┘
           ▼            ▼       ▼       ▼
    ┌───────────┐ ┌──────────┐ ┌─────┐ ┌──────────────────┐
-   │  MongoDB   │ │  MinIO   │ │Redis│ │  Neo4j (Graph)   │
-   │ (Job State)│ │(Artifact)│ │(Pub/│ │ (Attack Chains)  │
+   │  MongoDB  │ │  MinIO   │ │Redis│ │  Neo4j (Graph)   │
+   │(Job State)│ │(Artifact)│ │(Pub/│ │ (Attack Chains)  │
    └───────────┘ └──────────┘ │Sub) │ └──────────────────┘
-                               └──┬──┘
-                                  │ Celery Task
-                                  ▼
+                              └──┬──┘
+                                 │ Celery Task
+                                 ▼
                     ┌─────────────────────────────┐
-                    │   Isolated Sandbox Worker    │
+                    │   Isolated Sandbox Worker   │
                     │  ┌───────────────────────┐  │
-                    │  │ gVisor / Firecracker   │  │
-                    │  │ Execution Container    │  │
+                    │  │ gVisor / Firecracker  │  │
+                    │  │ Execution Container   │  │
                     │  └───────────┬───────────┘  │
-                    │              │ Telemetry     │
-                    │              ▼               │
+                    │              │ Telemetry    │
+                    │              ▼              │
                     │  ┌───────────────────────┐  │
-                    │  │ Monitor (psutil,       │  │
-                    │  │  scapy, watchdog)      │  │
+                    │  │ Monitor (psutil,      │  │
+                    │  │  scapy, watchdog)     │  │
                     │  └───────────┬───────────┘  │
-                    └──────────────┼───────────────┘
+                    └──────────────┼──────────────┘
                                    │
                                    ▼
-                    ┌─────────────────────────────┐
+                    ┌──────────────────────────────┐
                     │     AI Threat Engine         │
-                    │  ┌─────────┐ ┌───────────┐  │
+                    │  ┌─────────┐ ┌────────────┐  │
                     │  │ XGBoost │ │Transformers│  │
                     │  │Classify │ │MITRE Mapper│  │
-                    │  └─────────┘ └───────────┘  │
-                    │  ┌─────────┐ ┌───────────┐  │
+                    │  └─────────┘ └────────────┘  │
+                    │  ┌─────────┐ ┌────────────┐  │
                     │  │  IOC    │ │   YARA     │  │
                     │  │Pipeline │ │  Scanner   │  │
-                    │  └─────────┘ └───────────┘  │
-                    └─────────────────────────────┘
+                    │  └─────────┘ └────────────┘  │
+                    └──────────────────────────────┘
 ```
 
 > For a detailed architecture diagram with Mermaid charts, see [`docs/architecture.md`](docs/architecture.md).
