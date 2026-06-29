@@ -44,6 +44,14 @@ class ReportFinalizationStage(PipelineStage):
             "telemetry_events": context.telemetry_events,
         }
 
+        # Add V3-specific fields if available
+        if hasattr(context.risk_assessment, "evidence_tree"):
+            context.report["evidence_tree"] = context.risk_assessment.evidence_tree
+            context.report["behaviour_tree"] = context.risk_assessment.behaviour_tree
+            context.report["threat_distribution"] = context.risk_assessment.threat_distribution
+            context.report["confidence_trace"] = context.risk_assessment.confidence_trace
+            context.report["complexity_metrics"] = context.risk_assessment.complexity_metrics
+
         # Persist
         await set_report(context.job_id, context.report)
 

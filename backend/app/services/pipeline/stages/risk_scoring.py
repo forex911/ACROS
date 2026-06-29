@@ -1,4 +1,4 @@
-"""Risk Scoring Stage — Build EvidenceEnvelope and run RiskEngineV2."""
+"""Risk Scoring Stage — Build EvidenceEnvelope and run RiskEngineV3."""
 
 from app.services.pipeline.stage import PipelineStage
 from app.services.pipeline.context import PipelineContext
@@ -12,7 +12,7 @@ class RiskScoringStage(PipelineStage):
 
     async def _run(self, context: PipelineContext) -> PipelineContext:
         from app.analysis.evidence_envelope import EvidenceEnvelope
-        from app.analysis.risk_engine_v2 import RiskEngineV2
+        from app.analysis.v3.risk_engine_v3 import RiskEngineV3
 
         # Build unified evidence envelope
         context.envelope = EvidenceEnvelope.build(
@@ -28,18 +28,19 @@ class RiskScoringStage(PipelineStage):
             filename=context.filename,
         )
 
-        # Calculate risk
-        context.risk_assessment = RiskEngineV2.calculate_risk(context.envelope)
+        # Calculate risk using V3
+        context.risk_assessment = RiskEngineV3.calculate_risk(context.envelope)
 
         # Propagate risk from child artifacts
         max_child_risk = context.artifact_report.get("max_child_risk", 0)
-        context.risk_assessment = RiskEngineV2.propagate_artifact_risk(
+        context.risk_assessment = RiskEngineV3.propagate_artifact_risk(
             context.risk_assessment, max_child_risk
         )
 
         context.log(
             f"[Risk] Score: {context.risk_assessment.score}/100 "
             f"({context.risk_assessment.severity}) — "
-            f"{len(context.risk_assessment.contributors)} contributors"
+            f"Overall Confidence: {context.risk_assessment.confidence}%"
         )
         return context
+
