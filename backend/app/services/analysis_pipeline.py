@@ -10,8 +10,9 @@ from app.analysis.capability_engine import CapabilityEngine
 from app.analysis.behavior_engine import BehaviorEngine
 from app.analysis.threat_classifier import ThreatClassifier
 from app.analysis.impact_engine import ImpactEngine
-from app.analysis.risk_engine import RiskEngine
-from app.analysis.report_generator import AnalystReportGenerator
+from app.analysis.risk_engine_v2 import RiskEngineV2
+from app.analysis.evidence_envelope import EvidenceEnvelope
+from app.analysis.analyst_report import AnalystReportGenerator
 from app.analysis.deobfuscation import UniversalDeobfuscator
 from app.services.graph_ingester import GraphIngester
 from app.services.threat_correlation import build_attack_timeline, ingest_timeline_to_graph
@@ -27,7 +28,7 @@ from opentelemetry import trace
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
-from ai_engine.inference.predict import MalwareClassifier
+
 
 logger = logging.getLogger("report_generator")
 tracer = trace.get_tracer(__name__)
@@ -58,7 +59,7 @@ async def _ingest_to_graph(job_id: str, filename: str, static_results: dict,
                     executable=data.get("executable", data.get("name", "")),
                     command=data.get("cmdline", "")
                 )
-            elif evt_type in ("SOCKET_CONNECT", "NETWORK_CONNECT"):
+            if evt_type in ("SOCKET_CONNECT", "NETWORK_CONNECT"):
                 await GraphIngester.ingest_network_event(
                     job_id,
                     pid=data.get("pid", 0),
@@ -71,6 +72,27 @@ async def _ingest_to_graph(job_id: str, filename: str, static_results: dict,
                     job_id,
                     pid=data.get("pid", 0),
                     domain=data.get("query", "")
+                )
+            elif evt_type in ("REGISTRY_CREATE", "REGISTRY_MODIFY"):
+                await GraphIngester.ingest_registry_event(
+                    job_id,
+                    pid=data.get("pid", 0),
+                    key=data.get("key", ""),
+                    operation=data.get("operation", "MODIFY")
+                )
+            elif evt_type == "PERSISTENCE_EVENT":
+                await GraphIngester.ingest_persistence_event(
+                    job_id,
+                    pid=data.get("pid", 0),
+                    mechanism=data.get("mechanism", ""),
+                    target=data.get("target", "")
+                )
+            elif evt_type == "MEMORY_INJECTION":
+                await GraphIngester.ingest_memory_injection_event(
+                    job_id,
+                    source_pid=data.get("source_pid", 0),
+                    target_pid=data.get("target_pid", 0),
+                    api_call=data.get("api_call", "")
                 )
 
         # 3. Ingest IOCs
@@ -165,40 +187,42 @@ async def generate_report_pipeline(job_id: str, local_path: str, filename: str):
             threat = ThreatClassifier.classify(capabilities, behavior_chains)
             impact = ImpactEngine.calculate_impact(capabilities, behavior_chains)
             
-            tactics = {m.get("tactic", m.get("name", "Unknown")) for m in mitre_mappings}
-            
-            # Get ML Risk Score
-            try:
-                classifier = MalwareClassifier()
-                proc_cnt = sum(1 for e in telemetry_events if e.get("type") == "PROCESS_CREATE")
-                net_cnt = sum(1 for e in telemetry_events if e.get("type") in ("SOCKET_CONNECT", "NETWORK_CONNECT", "DNS_QUERY"))
-                fw_cnt = sum(1 for e in telemetry_events if e.get("type") == "FILE_WRITE")
-                feature_vector = np.array([[proc_cnt, net_cnt, fw_cnt, len(capabilities)]])
-                ml_risk_score = classifier.predict_risk(feature_vector)["risk_score"]
-            except Exception as e:
-                logger.error(f"ML risk prediction failed: {e}")
-                ml_risk_score = 0.0
-
-            risk_assessment = RiskEngine.calculate_risk(capabilities, behavior_chains, threat, len(tactics), 0, ml_risk_score)
-            
-            # Propagate risk from child artifacts
-            max_child_risk = artifact_report.get("max_child_risk", 0)
-            risk_assessment = RiskEngine.propagate_artifact_risk(risk_assessment, max_child_risk)
-            
-            analyst_report = AnalystReportGenerator.generate(
-                capabilities, behavior_chains, threat, list(tactics), impact, risk_assessment
-            )
-            ai_summary = analyst_report.executive_summary
-
+            # Build YARA scan results (moved earlier so they enter the envelope)
             from app.services.yara_service import YaraService
             yara_svc = YaraService()
             yara_scan_results = yara_svc.scan_file(local_path)
-            yara_matches = [m["rule"] for m in yara_scan_results] if yara_scan_results else []
+            yara_matches = yara_scan_results if yara_scan_results else []
+            yara_match_names = [m["rule"] for m in yara_matches] if yara_matches else []
+            
+            # ── Risk Engine v2: Build Evidence Envelope ──
+            await append_log(job_id, "[Pipeline] Assembling unified evidence envelope...")
+            envelope = EvidenceEnvelope.build(
+                job_id=job_id,
+                static_results=static_results,
+                telemetry_events=telemetry_events,
+                iocs=iocs,
+                mitre_mappings=mitre_mappings,
+                yara_matches=yara_matches,
+                capabilities=capabilities,
+                behavior_chains=behavior_chains,
+                threat=threat,
+            )
+            
+            risk_assessment = RiskEngineV2.calculate_risk(envelope)
+            
+            # Propagate risk from child artifacts
+            max_child_risk = artifact_report.get("max_child_risk", 0)
+            risk_assessment = RiskEngineV2.propagate_artifact_risk(risk_assessment, max_child_risk)
+            
+            analyst_report = AnalystReportGenerator.generate(
+                capabilities, behavior_chains, threat, list({m.get("tactic", m.get("name", "Unknown")) for m in mitre_mappings}), impact, risk_assessment
+            )
+            ai_summary = analyst_report.executive_summary
 
         # ── Neo4j Graph Ingestion (non-blocking, never breaks MongoDB pipeline) ──
         with tracer.start_as_current_span("graph_ingestion"):
             await append_log(job_id, "[Pipeline] Ingesting analysis results into Neo4j graph...")
-            await _ingest_to_graph(job_id, filename, static_results, telemetry_events, iocs, mitre_mappings, yara_matches)
+            await _ingest_to_graph(job_id, filename, static_results, telemetry_events, iocs, mitre_mappings, yara_match_names)
             
             try:
                 from app.services.graph_ingester import GraphIngester
@@ -216,12 +240,27 @@ async def generate_report_pipeline(job_id: str, local_path: str, filename: str):
             except Exception as e:
                 logger.error(f"Timeline graph ingestion failed (non-fatal): {e}")
 
+            # ── Graph-Assisted Correlation Scoring ──
+            try:
+                from app.analysis.graph_scorer import score_graph_correlation
+                chain_length, graph_bonus, has_c2_persist, graph_reasons = await score_graph_correlation(job_id)
+                if graph_bonus > 0:
+                    envelope.graph_chain_length = chain_length
+                    envelope.graph_has_c2_persistence = has_c2_persist
+                    # Re-score with graph data
+                    risk_assessment = RiskEngineV2.calculate_risk(envelope)
+                    # Re-propagate child risk
+                    risk_assessment = RiskEngineV2.propagate_artifact_risk(risk_assessment, max_child_risk)
+                    await append_log(job_id, f"[Pipeline] Graph correlation: chain={chain_length}, bonus=+{graph_bonus}")
+            except Exception as e:
+                logger.error(f"Graph correlation scoring failed (non-fatal): {e}")
+
         with tracer.start_as_current_span("finalize_report"):
             await append_log(job_id, "[Pipeline] Compiling final report...")
             # 4. Finalize Report
             report = {
                 "metadata": static_results["hash"],
-                "yara_matches": yara_matches,
+                "yara_matches": yara_match_names,
                 "mitre_tactics": mitre_mappings,
                 "risk_score": risk_assessment.score,
                 "risk_factors": risk_assessment.reasoning,

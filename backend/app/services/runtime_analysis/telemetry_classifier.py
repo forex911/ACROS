@@ -16,6 +16,8 @@ ALLOWED_EVENTS = {
     "POWERSHELL_EXECUTION",
     "SERVICE_CREATE",
     "PERSISTENCE_EVENT",
+    "MEMORY_INJECTION",
+    "PRIVILEGE_ESCALATION",
     "SANDBOX_START",
     "SANDBOX_COMPLETE"
 }
@@ -89,9 +91,9 @@ def classify_event(raw_event: dict) -> dict:
 
     # 4. Determine severity
     severity = "info"
-    if event_type in ["PROCESS_CREATE", "POWERSHELL_EXECUTION", "SERVICE_CREATE", "PERSISTENCE_EVENT"]:
+    if event_type in ["PROCESS_CREATE", "POWERSHELL_EXECUTION", "SERVICE_CREATE", "PERSISTENCE_EVENT", "MEMORY_INJECTION", "PRIVILEGE_ESCALATION"]:
         severity = "high"
-    elif event_type in ["FILE_WRITE", "REGISTRY_MODIFY", "HTTP_REQUEST", "SOCKET_CONNECT"]:
+    elif event_type in ["FILE_WRITE", "REGISTRY_MODIFY", "REGISTRY_CREATE", "HTTP_REQUEST", "SOCKET_CONNECT"]:
         severity = "medium"
     
     return {

@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import gsap from 'gsap';
@@ -13,6 +14,7 @@ gsap.registerPlugin(useGSAP);
 const Dashboard: React.FC = () => {
   const container = useRef<HTMLDivElement>(null);
   const [timeframe, setTimeframe] = useState('1W');
+  const navigate = useNavigate();
 
   const { data, isLoading, error, isFetching } = useQuery({
     queryKey: ['dashboardOverview', timeframe],
@@ -205,7 +207,7 @@ const Dashboard: React.FC = () => {
       <div className="gsap-panel p-8 border border-[#333333] bg-[#000000]">
         <div className="flex justify-between items-center mb-6">
           <h3 className="font-heading font-bold text-lg tracking-widest uppercase">Recent Activity</h3>
-          <div className="text-xs font-mono text-[#666666] tracking-widest uppercase cursor-pointer hover:text-[#ffffff] transition-colors">View All</div>
+          <Link to="/workspace" className="text-xs font-mono text-[#666666] tracking-widest uppercase hover:text-[#ffffff] transition-colors">View All</Link>
         </div>
         
         <div className="min-h-[420px] overflow-y-auto custom-scrollbar pr-2" data-lenis-prevent>
@@ -224,7 +226,11 @@ const Dashboard: React.FC = () => {
                 <tr><td colSpan={5} className="py-12 text-center text-[#666666] text-xs uppercase">No recent activity.</td></tr>
               )}
               {recent_activity.map((job: any) => (
-                <tr key={job.id} className="border-b border-[#222222] hover:bg-[#111111] transition-colors cursor-pointer group">
+                <tr 
+                  key={job.id} 
+                  className="border-b border-[#222222] hover:bg-[#111111] transition-colors cursor-pointer group"
+                  onClick={() => navigate(`/analysis/${job.id}`)}
+                >
                   <td className="py-5">
                     <div className="flex items-center gap-4">
                       <div className="w-8 h-8 border border-[#444444] group-hover:border-[#ffffff] transition-colors flex items-center justify-center text-[#ffffff]">

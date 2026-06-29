@@ -23,7 +23,7 @@ from app.models.job_model import create_job
 from app.utils.object_store import upload_file, generate_presigned_url
 from app.core.config import settings
 from app.api.dependencies.auth import get_current_user
-from app.services.report_generator import generate_report_pipeline
+from app.services.analysis_pipeline import generate_report_pipeline
 import shutil
 
 logger = logging.getLogger("upload")
@@ -32,7 +32,7 @@ router = APIRouter()
 
 
 @router.post("/upload", status_code=HTTP_202_ACCEPTED)
-@limiter.limit("10/minute")
+@limiter.limit("1000/minute")
 async def upload_artifact(
     request: Request,
     file: UploadFile = File(...),

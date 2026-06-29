@@ -1,6 +1,6 @@
 import logging
 import asyncio
-from app.core.config import SANDBOX_MODE
+from app.core.config import settings
 from app.database.redis import redis_client
 import json
 import datetime
@@ -36,7 +36,7 @@ async def orchestrate_sandbox(job_id: str, local_path: str):
         await publish_state(job_id, "BOOTING")
         
         telemetry_events = []
-        if SANDBOX_MODE == 'mock':
+        if settings.SANDBOX_MODE == 'mock':
             from app.services.sandbox.mock_sandbox import run_mock_sandbox
             
             await publish_state(job_id, "RUNNING")
@@ -50,7 +50,7 @@ async def orchestrate_sandbox(job_id: str, local_path: str):
                 
             await publish_state(job_id, "COLLECTING")
             
-        elif SANDBOX_MODE == 'firecracker':
+        elif settings.SANDBOX_MODE == 'firecracker':
             from app.services.sandbox.firecracker_manager import FirecrackerManager
             from app.services.sandbox.vsock_client import VsockClient
             import base64
@@ -103,7 +103,7 @@ async def orchestrate_sandbox(job_id: str, local_path: str):
                 if 'client' in locals():
                     client.close()
             
-        elif SANDBOX_MODE == 'kubernetes':
+        elif settings.SANDBOX_MODE == 'kubernetes':
             from app.services.kubernetes_job_manager import create_sandbox_job, get_job_status, get_pod_logs, delete_sandbox_job
             from app.utils.object_store import generate_presigned_url
             from app.models.job_model import get_job
@@ -152,7 +152,7 @@ async def orchestrate_sandbox(job_id: str, local_path: str):
                 # Optionally delete or keep it based on JOB_TTL_SECONDS
                 pass
                 
-        elif SANDBOX_MODE == 'kata':
+        elif settings.SANDBOX_MODE == 'kata':
             # Kata Containers: same as Kubernetes mode but with kata RuntimeClass.
             # Reuses the existing kubernetes_job_manager with runtime_class override.
             from app.services.kubernetes_job_manager import create_sandbox_job, get_job_status, get_pod_logs
@@ -204,7 +204,7 @@ async def orchestrate_sandbox(job_id: str, local_path: str):
                 pass
 
         else:
-            raise ValueError(f"Unknown SANDBOX_MODE: {SANDBOX_MODE}")
+            raise ValueError(f"Unknown SANDBOX_MODE: {settings.SANDBOX_MODE}")
 
         return telemetry_events
         

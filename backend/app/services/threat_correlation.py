@@ -1,6 +1,12 @@
 import logging
 from typing import List, Dict, Any
 from app.database.neo4j import get_neo4j_async_session
+from app.models.graph_schema import RelType
+
+
+async def _run_query(session, query, **kwargs):
+    res = await session.run(query, **kwargs)
+    await res.consume()
 
 logger = logging.getLogger("threat_correlation")
 
@@ -125,13 +131,13 @@ async def ingest_timeline_to_graph(job_id: str, timeline: List[Dict[str, Any]]):
         async with get_neo4j_async_session() as session:
             # Create all timeline nodes
             for entry in timeline:
-                create_query = """
-                MATCH (j:SandboxJob {job_id: $job_id})
-                MERGE (s:TimelineStage {job_id: $job_id, stage: $stage})
+                create_query = f"""
+                MATCH (j:SandboxJob {{job_id: $job_id}})
+                MERGE (s:TimelineStage {{job_id: $job_id, stage: $stage}})
                 SET s.label = $label, s.type = $type, s.detail = $detail, s.timestamp = $timestamp
-                MERGE (j)-[:HAS_STAGE]->(s)
+                MERGE (j)-[:{RelType.HAS_STAGE}]->(s)
                 """
-                await session.run(create_query,
+                await _run_query(session, create_query,
                     job_id=job_id,
                     stage=entry["stage"],
                     label=entry["label"],
@@ -142,12 +148,12 @@ async def ingest_timeline_to_graph(job_id: str, timeline: List[Dict[str, Any]]):
 
             # Chain stages with :FOLLOWED_BY
             for i in range(len(timeline) - 1):
-                chain_query = """
-                MATCH (a:TimelineStage {job_id: $job_id, stage: $stage_a})
-                MATCH (b:TimelineStage {job_id: $job_id, stage: $stage_b})
-                MERGE (a)-[:FOLLOWED_BY]->(b)
+                chain_query = f"""
+                MATCH (a:TimelineStage {{job_id: $job_id, stage: $stage_a}})
+                MATCH (b:TimelineStage {{job_id: $job_id, stage: $stage_b}})
+                MERGE (a)-[:{RelType.FOLLOWED_BY}]->(b)
                 """
-                await session.run(chain_query,
+                await _run_query(session, chain_query,
                     job_id=job_id,
                     stage_a=timeline[i]["stage"],
                     stage_b=timeline[i + 1]["stage"]

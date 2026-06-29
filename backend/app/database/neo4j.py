@@ -1,6 +1,6 @@
 import logging
 from neo4j import GraphDatabase, AsyncGraphDatabase
-from app.core.config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+from app.core.config import settings
 
 logger = logging.getLogger("neo4j_driver")
 
@@ -11,9 +11,9 @@ class Neo4jManager:
 
     def init_driver(self):
         try:
-            self.driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
-            self.async_driver = AsyncGraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
-            logger.info(f"Connected to Neo4j at {NEO4J_URI}")
+            self.driver = GraphDatabase.driver(settings.NEO4J_URI, auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD))
+            self.async_driver = AsyncGraphDatabase.driver(settings.NEO4J_URI, auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD))
+            logger.info(f"Connected to Neo4j at {settings.NEO4J_URI}")
         except Exception as e:
             logger.error(f"Failed to connect to Neo4j: {e}")
 

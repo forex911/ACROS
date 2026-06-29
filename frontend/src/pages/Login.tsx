@@ -69,8 +69,8 @@ export const Login: React.FC = () => {
       <div className="gsap-card p-12 w-full max-w-md relative z-10 border border-[#333333] bg-[#000000]">
         {/* Logo */}
         <div className="flex flex-col items-center mb-12">
-          <div className="gsap-element w-16 h-16 border border-[#ffffff] flex items-center justify-center mb-6">
-            <Shield className="w-8 h-8 text-[#ffffff]" />
+          <div className="gsap-element w-24 h-24 flex items-center justify-center mb-4">
+            <img src="/sentinel.png" alt="Sentinel Logo" className="w-full h-full object-contain drop-shadow-md" />
           </div>
           <h2 className="gsap-element text-4xl font-heading font-black text-[#ffffff] tracking-tighter uppercase">Sentinel</h2>
           <p className="gsap-element text-[#888888] font-mono text-xs mt-2 tracking-widest uppercase">Authorization Protocol</p>

@@ -10,7 +10,7 @@ import uuid
 
 import aiofiles
 
-from app.core.config import UPLOAD_DIR
+from app.core.config import settings
 
 
 async def save_uploaded_file(file) -> dict:
@@ -19,7 +19,7 @@ async def save_uploaded_file(file) -> dict:
 
     Returns a dict with ``file_id``, ``filename``, and ``path``.
     """
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
     file_id = str(uuid.uuid4())
     # Extract only the base name of the original file (prevent path traversal logic on the client side)
@@ -27,7 +27,7 @@ async def save_uploaded_file(file) -> dict:
     
     # Store the file strictly as UUID.sample to prevent path traversal and command injection vulnerabilities
     filename = f"{file_id}.sample"
-    file_path = os.path.join(UPLOAD_DIR, filename)
+    file_path = os.path.join(settings.UPLOAD_DIR, filename)
 
     # Stream in 64 KiB chunks — never loads the full binary into memory
     async with aiofiles.open(file_path, "wb") as out:

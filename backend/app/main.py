@@ -63,15 +63,31 @@ async def on_startup():
     except Exception:
         print("[FAIL] Redis")
 
-    # 3. Neo4j
+    # 3. Neo4j & Graph Schema Validation
     try:
-        async def check_neo4j():
+        async def check_neo4j_schema():
+            from app.models.graph_schema import RelType
             async with get_neo4j_async_session() as session:
                 await session.run("RETURN 1")
-        await asyncio.wait_for(check_neo4j(), timeout=2.0)
-        print("[OK] Neo4j")
-    except Exception:
-        print("[FAIL] Neo4j")
+                # Validate schema against actual database state
+                res = await session.run("CALL db.relationshipTypes() YIELD relationshipType RETURN collect(relationshipType) as types")
+                record = await res.single()
+                if record:
+                    db_types = record["types"]
+                    allowed_types = set(RelType.all())
+                    unsupported = [t for t in db_types if t not in allowed_types]
+                    if unsupported:
+                        import logging
+                        logging.getLogger("startup").warning(
+                            f"Neo4j database contains unsupported relationship types: {unsupported}. "
+                            "Ensure queries only reference validated schema constants."
+                        )
+                        print(f"[WARN] Neo4j Schema (unsupported types: {unsupported})")
+                    else:
+                        print("[OK] Neo4j")
+        await asyncio.wait_for(check_neo4j_schema(), timeout=2.0)
+    except Exception as e:
+        print(f"[FAIL] Neo4j ({e})")
 
     # 4. MinIO
     try:
@@ -84,9 +100,11 @@ async def on_startup():
     except Exception as e:
         import botocore.exceptions
         if isinstance(e, botocore.exceptions.ClientError) and e.response['Error']['Code'] == '404':
-            print("[OK] MinIO (Bucket Missing)")
+            from app.utils.object_store import init_s3_lifecycle
+            await asyncio.to_thread(init_s3_lifecycle)
+            print("[OK] MinIO (Bucket Created & Lifecycle Set)")
         else:
-            print("[FAIL] MinIO")
+            print(f"[FAIL] MinIO ({e})")
 
     # 5. YARA
     from app.services.yara_service import YaraService
@@ -276,13 +294,13 @@ async def firecracker_health():
     Firecracker-specific health probe. Reports kernel, rootfs, vsock,
     and API socket availability. Only meaningful when SANDBOX_MODE=firecracker.
     """
-    from app.core.config import SANDBOX_MODE
+    from app.core.config import settings
     import os
 
-    if SANDBOX_MODE != "firecracker":
+    if settings.SANDBOX_MODE != "firecracker":
         return {
             "status": "skipped",
-            "reason": f"SANDBOX_MODE is '{SANDBOX_MODE}', not 'firecracker'"
+            "reason": f"SANDBOX_MODE is '{settings.SANDBOX_MODE}', not 'firecracker'"
         }
 
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../vm-image"))

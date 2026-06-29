@@ -7,21 +7,21 @@ import boto3
 from botocore.client import Config
 from botocore.exceptions import ClientError
 
-from app.core.config import S3_ENDPOINT, S3_REGION, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET, S3_USE_SSL, S3_PRESIGNED_EXPIRATION
+from app.core.config import settings
 
 logger = logging.getLogger("object_store")
 
 
 def s3_client():
     client_kwargs = {
-        'region_name': S3_REGION,
-        'aws_access_key_id': S3_ACCESS_KEY,
-        'aws_secret_access_key': S3_SECRET_KEY,
-        'use_ssl': S3_USE_SSL,
+        'region_name': settings.S3_REGION,
+        'aws_access_key_id': settings.S3_ACCESS_KEY,
+        'aws_secret_access_key': settings.S3_SECRET_KEY,
+        'use_ssl': settings.S3_USE_SSL,
         'config': Config(signature_version='s3v4')
     }
-    if S3_ENDPOINT:
-        client_kwargs['endpoint_url'] = S3_ENDPOINT
+    if settings.S3_ENDPOINT:
+        client_kwargs['endpoint_url'] = settings.S3_ENDPOINT
 
     client = boto3.client('s3', **client_kwargs)
     return client
@@ -34,15 +34,15 @@ def init_s3_lifecycle():
     try:
         # Create bucket if not exists
         try:
-            client.head_bucket(Bucket=S3_BUCKET)
+            client.head_bucket(Bucket=settings.S3_BUCKET)
         except ClientError:
-            client.create_bucket(Bucket=S3_BUCKET)
-            logger.info(f"Created bucket {S3_BUCKET}")
+            client.create_bucket(Bucket=settings.S3_BUCKET)
+            logger.info(f"Created bucket {settings.S3_BUCKET}")
             
         # Enable object lock for immutability
         try:
             client.put_object_lock_configuration(
-                Bucket=S3_BUCKET,
+                Bucket=settings.S3_BUCKET,
                 ObjectLockConfiguration={
                     'ObjectLockEnabled': 'Enabled',
                     'Rule': {
@@ -53,7 +53,7 @@ def init_s3_lifecycle():
                     }
                 }
             )
-            logger.info(f"Enabled Object Lock (Immutability) on {S3_BUCKET}")
+            logger.info(f"Enabled Object Lock (Immutability) on {settings.S3_BUCKET}")
         except Exception as e:
             logger.warning(f"Failed to set Object Lock: {e}")
             
@@ -71,17 +71,17 @@ def init_s3_lifecycle():
             ]
         }
         client.put_bucket_lifecycle_configuration(
-            Bucket=S3_BUCKET,
+            Bucket=settings.S3_BUCKET,
             LifecycleConfiguration=lifecycle_config
         )
-        logger.info(f"Set 90-day lifecycle expiration on {S3_BUCKET}")
+        logger.info(f"Set 90-day lifecycle expiration on {settings.S3_BUCKET}")
         
     except Exception as e:
         logger.error(f"Failed to initialize S3 lifecycle rules: {e}")
 
 def upload_file(local_path: str, bucket: Optional[str] = None, key: Optional[str] = None) -> dict:
     if not bucket:
-        bucket = S3_BUCKET
+        bucket = settings.S3_BUCKET
     if not key:
         key = os.path.basename(local_path)
 
@@ -96,7 +96,7 @@ def upload_file(local_path: str, bucket: Optional[str] = None, key: Optional[str
 
 def generate_presigned_url(bucket: Optional[str], key: str, expires: Optional[int] = None) -> str:
     if expires is None:
-        expires = S3_PRESIGNED_EXPIRATION
+        expires = settings.S3_PRESIGNED_EXPIRATION
     client = s3_client()
     url = client.generate_presigned_url('get_object', Params={'Bucket': bucket, 'Key': key}, ExpiresIn=expires)
     return url

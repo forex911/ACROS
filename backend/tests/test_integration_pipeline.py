@@ -2,7 +2,7 @@ import pytest
 import asyncio
 from unittest.mock import patch, MagicMock
 
-from app.services.report_generator import generate_report_pipeline
+from app.services.analysis_pipeline import generate_report_pipeline
 from app.services.sandbox.orchestrator import publish_state
 
 @pytest.fixture
@@ -35,16 +35,16 @@ def mock_static():
 
 
 @pytest.mark.asyncio
-@patch("app.services.report_generator.analyze_hashes")
-@patch("app.services.report_generator.extract_strings")
-@patch("app.services.report_generator.analyze_pe_file")
-@patch("app.services.report_generator.orchestrate_sandbox")
+@patch("app.services.analysis_pipeline.analyze_hashes")
+@patch("app.services.analysis_pipeline.extract_strings")
+@patch("app.services.analysis_pipeline.analyze_pe_file")
+@patch("app.services.analysis_pipeline.orchestrate_sandbox")
 @patch("app.services.yara_service.YaraService")
-@patch("app.services.report_generator.GraphIngester")
-@patch("app.services.report_generator.update_job_status")
-@patch("app.services.report_generator.set_report")
-@patch("app.services.report_generator.publish_state")
-@patch("app.services.report_generator.append_log")
+@patch("app.services.analysis_pipeline.GraphIngester")
+@patch("app.services.analysis_pipeline.update_job_status")
+@patch("app.services.analysis_pipeline.set_report")
+@patch("app.services.analysis_pipeline.publish_state")
+@patch("app.services.analysis_pipeline.append_log")
 @patch("app.services.threat_correlation.get_neo4j_async_session")
 async def test_integration_pipeline(
     mock_neo4j, mock_append_log, mock_publish_state, mock_set_report, mock_update_status,

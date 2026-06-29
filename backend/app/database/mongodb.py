@@ -1,12 +1,12 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 import pymongo
 import logging
-from app.core.config import DATABASE_NAME, MONGO_URI
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-client = AsyncIOMotorClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-db = client[DATABASE_NAME]
+client = AsyncIOMotorClient(settings.MONGO_URI, serverSelectionTimeoutMS=5000)
+db = client[settings.DATABASE_NAME]
 
 async def init_db():
     """

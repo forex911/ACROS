@@ -116,6 +116,55 @@ def audit_hook(event, args):
                     abs_path = os.path.abspath(file_path)
                     WRITTEN_FILES.add(abs_path)
                     send_telemetry(job_id, "FILE_WRITE", {"path": abs_path})
+
+    # Registry operations (Windows winreg module)
+    elif event == "winreg.OpenKey":
+        try:
+            key_path = str(args[1]) if len(args) > 1 else str(args[0])
+            send_telemetry(job_id, "REGISTRY_CREATE", {"key": key_path, "operation": "OPEN"})
+        except Exception:
+            pass
+    elif event == "winreg.SetValue" or event == "winreg.SetValueEx":
+        try:
+            key_path = str(args[0]) if args else "unknown"
+            value_name = str(args[1]) if len(args) > 1 else ""
+            value_data = str(args[3]) if len(args) > 3 else str(args[2]) if len(args) > 2 else ""
+            send_telemetry(job_id, "REGISTRY_MODIFY", {
+                "key": key_path,
+                "value_name": value_name,
+                "value_data": value_data[:200],
+                "operation": "MODIFY",
+            })
+            # Detect persistence: Run keys
+            key_lower = key_path.lower()
+            if "currentversion\\run" in key_lower or "currentversion\\runonce" in key_lower:
+                send_telemetry(job_id, "PERSISTENCE_EVENT", {
+                    "mechanism": "registry_run_key",
+                    "target": f"{key_path}\\{value_name}",
+                })
+        except Exception:
+            pass
+    elif event == "winreg.CreateKey" or event == "winreg.CreateKeyEx":
+        try:
+            key_path = str(args[1]) if len(args) > 1 else str(args[0])
+            send_telemetry(job_id, "REGISTRY_CREATE", {"key": key_path, "operation": "CREATE"})
+        except Exception:
+            pass
+
+    # Detect ctypes calls that may indicate memory injection
+    elif event == "ctypes.dlsym" or event == "ctypes.LoadLibrary":
+        try:
+            target = str(args[0]) if args else ""
+            injection_apis = {"virtualallocex", "writeprocessmemory", "createremotethread",
+                              "ntwritevirtualmemory", "rtlcreateuserthread", "setthreadcontext"}
+            if any(api in target.lower() for api in injection_apis):
+                send_telemetry(job_id, "MEMORY_INJECTION", {
+                    "source_pid": os.getpid(),
+                    "target_pid": 0,
+                    "api_call": target,
+                })
+        except Exception:
+            pass
                     
     # Eval/Exec
     elif event == "exec":

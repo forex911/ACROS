@@ -121,26 +121,39 @@ export const Workspace: React.FC = () => {
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
     setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
+    
     try {
-      const response = await api.post('/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return api.post('/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
       });
+
+      const results = await Promise.allSettled(uploadPromises);
       await fetchJobs();
-      if (response.data.file_id) {
-        await loadJobDetail(response.data.file_id);
+      
+      const fulfilled = results.filter(r => r.status === 'fulfilled') as PromiseFulfilledResult<any>[];
+      const rejected = results.filter(r => r.status === 'rejected') as PromiseRejectedResult[];
+
+      if (fulfilled.length > 0 && fulfilled[0].value.data.file_id) {
+        await loadJobDetail(fulfilled[0].value.data.file_id);
+      }
+
+      if (rejected.length > 0) {
+        console.error('Some uploads failed', rejected);
+        alert(`Failed to upload ${rejected.length} file(s). They might be unsupported types or too large.`);
       }
     } catch (error) {
       console.error('Upload failed', error);
-      alert('Upload failed. Please try again.');
+      alert('An unexpected error occurred during upload.');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -160,6 +173,8 @@ export const Workspace: React.FC = () => {
             ref={fileInputRef} 
             onChange={handleFileChange} 
             className="hidden" 
+            accept=".py,.exe,.js,.bat"
+            multiple
           />
           <button 
             onClick={handleUploadClick}

@@ -14,7 +14,7 @@ from app.analysis.artifact_engine import (
     ArtifactEngine,
     ArtifactResult
 )
-from app.analysis.risk_engine import RiskEngine
+from app.analysis.risk_engine_v2 import RiskEngineV2
 from app.analysis.models import RiskAssessment
 
 # --- Test Data & Fixtures ---
@@ -152,17 +152,17 @@ def test_risk_propagation():
     
     # Child with high risk (95)
     # 95 * 0.9 = 85
-    elevated = RiskEngine.propagate_artifact_risk(parent, 95)
+    elevated = RiskEngineV2.propagate_artifact_risk(parent, 95)
     
     assert elevated.score == 85
     assert elevated.severity == "CRITICAL"
     assert len(elevated.reasoning) == 2
-    assert "Risk score elevated" in elevated.reasoning[-1]
+    assert "Risk elevated" in elevated.reasoning[-1]
     
     # Child with low risk (10)
     parent.score = 50
     parent.severity = "MEDIUM"
-    elevated2 = RiskEngine.propagate_artifact_risk(parent, 10)
+    elevated2 = RiskEngineV2.propagate_artifact_risk(parent, 10)
     
     assert elevated2.score == 50
     assert elevated2.severity == "MEDIUM"

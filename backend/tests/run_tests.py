@@ -3,7 +3,7 @@ import sys
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from app.services.report_generator import generate_report_pipeline
+from app.services.analysis_pipeline import generate_report_pipeline
 import json
 
 async def run_all():

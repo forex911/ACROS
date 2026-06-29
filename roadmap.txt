@@ -1,0 +1,60 @@
+# Sentinel v1.0 - Productization Master Plan
+
+## Mission
+Transform Sentinel from a development project into a production-quality self-hosted malware analysis platform.
+The objective is stability, security, maintainability, deployment simplicity, and commercial readiness.
+
+**Focus:** Refining, integrating, hardening, and packaging the existing architecture. No unnecessary new features.
+
+---
+
+## 🎯 Target Architecture
+
+**Cloud:** Authentication API → Neon PostgreSQL → Users, Sessions, Analysis Metadata, Audit Logs
+
+**Customer Environment (Self-Hosted):**
+- UI: Next.js + Tailwind
+- API: FastAPI (Python)
+- Database: MongoDB (Analysis Results) + Neo4j (Graph correlation) + Redis (Task Queue)
+- File Storage: MinIO (S3 compatible)
+- Execution: Sandbox Environment
+
+---
+
+## 🗺️ Roadmap & Phases
+
+### ✅ Phase 0: Foundation Stabilization (COMPLETED)
+**Goals:** Eliminate technical debt, standardize module interfaces, remove duplicate implementations.
+- Module dependency graph created
+- Standardized event schema & EvidenceEnvelope
+- Central configuration validation
+
+### ✅ Phase 1: Detection Engine V2 (COMPLETED)
+**Goals:** Consolidate disparate scanning systems into one robust engine.
+- Integrate YARA
+- Integrate IOC pipeline & MITRE mapping
+- Integrate Runtime telemetry & Static PE analysis
+- **Milestone:** Produce one explainable risk score (Risk Engine v2.1)
+
+### ✅ Phase 2: Graph-based Correlation (COMPLETED)
+**Goals:** Ensure Neo4j accurately correlates attack chains.
+- Robust ingestion of process trees and network connections
+- Corroboration multiplier for risk scoring based on graph patterns
+
+### ✅ Phase 3: Telemetry (COMPLETED)
+**Goals:** Reliable telemetry pipeline.
+- Streaming WebSockets for real-time dashboard updates
+
+### 🔄 Phase 4: Authentication API (NEXT)
+**Goals:** Secure the platform and add user management.
+- Implement `AuthRepository` interface
+- Provide a SQLite/mock implementation for local development
+- Build JWT-based login, session management, and API route protection
+- (Future: Neon PostgreSQL integration for cloud sync)
+
+### ⏳ Phase 5: Security Hardening (PENDING)
+**Goals:** Defend the backend API against malicious inputs.
+- Rate limiting to prevent DoS
+- Input validation (NoSQL injection prevention)
+- Path traversal mitigation on upload endpoints
+- Payload size and Magic Byte enforcement
