@@ -2,20 +2,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sentinel-worker
+  name: aegis-worker
   labels:
-    app: sentinel-worker
+    app: aegis-worker
 spec:
   replicas: {{ .Values.replicaCount.worker }}
   selector:
     matchLabels:
-      app: sentinel-worker
+      app: aegis-worker
   template:
     metadata:
       labels:
-        app: sentinel-worker
+        app: aegis-worker
     spec:
-      serviceAccountName: sentinel-worker-sa
+      serviceAccountName: aegis-worker-sa
       containers:
         - name: worker
           image: "{{ .Values.image.worker.repository }}:{{ .Values.image.worker.tag }}"

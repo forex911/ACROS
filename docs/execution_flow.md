@@ -1,4 +1,4 @@
-# Sentinel — Analysis Pipeline Execution Flow
+# Aegis — Analysis Pipeline Execution Flow
 
 ## Overview
 

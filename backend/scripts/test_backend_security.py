@@ -92,7 +92,7 @@ async def test_rate_limiting(client):
 
 async def main():
     print("==================================================")
-    print("      SENTINEL AI - BACKEND SECURITY TESTER       ")
+    print("        AEGIS AI - BACKEND SECURITY TESTER        ")
     print("==================================================")
     
     async with httpx.AsyncClient(timeout=30.0) as client:

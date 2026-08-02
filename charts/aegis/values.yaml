@@ -1,4 +1,4 @@
-# Default values for sentinel.
+# Default values for Aegis.
 
 replicaCount:
   backend: 2
@@ -9,14 +9,14 @@ replicaCount:
   minio: 1
 
 image:
-  backend: sentinel/backend:latest
-  frontend: sentinel/frontend:latest
+  backend: aegis/backend:latest
+  frontend: aegis/frontend:latest
   pullPolicy: IfNotPresent
 
 ingress:
   enabled: true
   className: "nginx"
-  host: sentinel.local
+  host: Aegis.local
 
 sandbox:
   runtimeClassName: gvisor

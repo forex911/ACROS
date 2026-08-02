@@ -18,7 +18,7 @@ def send_telemetry(job_id, event_type, severity, data):
     print(json.dumps(msg), flush=True)
 
 def audit_hook(event, args):
-    job_id = os.environ.get("SENTINEL_JOB_ID", "unknown")
+    job_id = os.environ.get("AEGIS_JOB_ID") or os.environ.get("SENTINEL_JOB_ID", "unknown")
     
     try:
         # Process spawning
@@ -70,11 +70,12 @@ if __name__ == "__main__":
     job_id = sys.argv[1]
     original_target_script = sys.argv[2]
     
+    os.environ["AEGIS_JOB_ID"] = job_id
     os.environ["SENTINEL_JOB_ID"] = job_id
     
     # ── ISOLATION SETUP ──
     # Create a temporary directory for execution
-    temp_dir = tempfile.mkdtemp(prefix="sentinel_sandbox_")
+    temp_dir = tempfile.mkdtemp(prefix="aegis_sandbox_")
     
     try:
         # Copy script into the isolated directory
@@ -84,7 +85,7 @@ if __name__ == "__main__":
         
         # Restrict environment by changing CWD and fixing sys.path
         os.chdir(temp_dir)
-        sys.path = [temp_dir] + [p for p in sys.path if "sentinel-ai" not in p]
+        sys.path = [temp_dir] + [p for p in sys.path if "aegis-ai" not in p and "sentinel-ai" not in p]
         
         sys.addaudithook(audit_hook)
         

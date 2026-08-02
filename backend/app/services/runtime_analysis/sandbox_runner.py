@@ -44,7 +44,7 @@ def _run_subprocess_blocking(job_id: str, local_path: str):
 
     try:
         # ── Create jail ──────────────────────────────────────────
-        jail_dir = os.path.join(tempfile.gettempdir(), "sentinel_sandbox", job_id)
+        jail_dir = os.path.join(tempfile.gettempdir(), "aegis_sandbox", job_id)
         os.makedirs(jail_dir, exist_ok=True)
 
         filename = os.path.basename(local_path)
@@ -67,6 +67,8 @@ def _run_subprocess_blocking(job_id: str, local_path: str):
             "SYSTEMROOT": os.environ.get("SYSTEMROOT", ""),
             "TEMP": os.environ.get("TEMP", tempfile.gettempdir()),
             "TMP": os.environ.get("TMP", tempfile.gettempdir()),
+            "AEGIS_JOB_ID": job_id,
+            "AEGIS_SANDBOX": "1",
             "SENTINEL_JOB_ID": job_id,
             "SENTINEL_SANDBOX": "1",
             "PYTHONIOENCODING": "utf-8",

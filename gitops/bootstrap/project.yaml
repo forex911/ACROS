@@ -1,10 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: sentinel-project
+  name: aegis-project
   namespace: argocd
 spec:
-  description: "ArgoCD project for SentinelAI applications"
+  description: "ArgoCD project for AegisAI applications"
   sourceRepos:
     - "REPLACE_WITH_REPO"
   destinations:

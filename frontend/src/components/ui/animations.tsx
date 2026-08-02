@@ -1,8 +1,8 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 
 // ─── Container variants for staggering children ───────────────────────────
-export const staggerContainer = {
+export const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -14,53 +14,53 @@ export const staggerContainer = {
 };
 
 // ─── Individual item that fades + slides up ────────────────────────────────
-export const fadeInUp = {
+export const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
       duration: 0.45,
-      ease: "easeOut",
+      ease: [0.25, 0.1, 0.25, 1],
     },
   },
 };
 
 // ─── Fade in from the side (left) ─────────────────────────────────────────
-export const fadeInLeft = {
+export const fadeInLeft: Variants = {
   hidden: { opacity: 0, x: -24 },
   visible: {
     opacity: 1,
     x: 0,
     transition: {
       duration: 0.45,
-      ease: "easeOut",
+      ease: [0.25, 0.1, 0.25, 1],
     },
   },
 };
 
 // ─── Fade in from the side (right) ────────────────────────────────────────
-export const fadeInRight = {
+export const fadeInRight: Variants = {
   hidden: { opacity: 0, x: 24 },
   visible: {
     opacity: 1,
     x: 0,
     transition: {
       duration: 0.45,
-      ease: "easeOut",
+      ease: [0.25, 0.1, 0.25, 1],
     },
   },
 };
 
 // ─── Scale in (for cards, modals) ─────────────────────────────────────────
-export const scaleIn = {
+export const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.92 },
   visible: {
     opacity: 1,
     scale: 1,
     transition: {
       duration: 0.35,
-      ease: "easeOut",
+      ease: [0.25, 0.1, 0.25, 1],
     },
   },
 };

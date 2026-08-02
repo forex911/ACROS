@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: sentinel-workers-dev
+  name: aegis-workers-dev
   namespace: argocd
 spec:
-  project: sentinel-project
+  project: aegis-project
   source:
     repoURL: "REPLACE_WITH_REPO"
     targetRevision: HEAD
     path: deployment/kubernetes/k8s/overlays/dev
   destination:
     server: https://kubernetes.default.svc
-    namespace: sentinel-workers
+    namespace: aegis-workers
   syncPolicy:
     automated:
       prune: true

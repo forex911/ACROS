@@ -1,5 +1,6 @@
 import os
 import tempfile
+from pathlib import Path
 from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
@@ -10,15 +11,15 @@ class Settings(BaseSettings):
     
     # MongoDB Configuration
     MONGO_URI: str = Field("mongodb://localhost:27017", description="MongoDB connection string")
-    DATABASE_NAME: str = Field("sentinel_ai", description="MongoDB database name")
+    DATABASE_NAME: str = Field("aegis_ai", description="MongoDB database name")
 
     # Directory Configuration
     UPLOAD_DIR: str = Field(
-        default=os.path.join(tempfile.gettempdir(), "sentinel_uploads"),
+        default=os.path.join(tempfile.gettempdir(), "aegis_uploads"),
         description="Local temporary upload directory"
     )
     REPORT_DIR: str = Field(
-        default=os.path.join(tempfile.gettempdir(), "sentinel_reports"),
+        default=os.path.join(tempfile.gettempdir(), "aegis_reports"),
         description="Local temporary report directory"
     )
 
@@ -59,7 +60,7 @@ class Settings(BaseSettings):
     NEO4J_PASSWORD: str = Field(..., description="Neo4j password")
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(Path(__file__).resolve().parents[3] / ".env"),
         env_file_encoding="utf-8",
         extra="ignore"
     )

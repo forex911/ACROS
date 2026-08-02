@@ -1,6 +1,6 @@
 # Installation & Setup
 
-This guide covers deploying Sentinel-AI for local development, Docker Compose, and production Kubernetes environments.
+This guide covers deploying Aegis-AI for local development, Docker Compose, and production Kubernetes environments.
 
 ---
 
@@ -21,8 +21,8 @@ This guide covers deploying Sentinel-AI for local development, Docker Compose, a
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/sentinel-ai.git
-cd sentinel-ai
+git clone https://github.com/your-org/Aegis-AI.git
+cd Aegis-AI
 ```
 
 ### 2. Backend Setup

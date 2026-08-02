@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 def generate_synthetic_data(num_samples=1000):
     """
-    Generates synthetic training data for the Sentinel AI classifier.
+    Generates synthetic training data for the Aegis AI classifier.
     Features: [proc_cnt, net_cnt, fw_cnt, cap_cnt]
     """
     np.random.seed(42)

@@ -1,5 +1,5 @@
 """
-DEPRECATED — Docker socket access has been removed from Sentinel-AI.
+DEPRECATED — Docker socket access has been removed from Aegis-AI.
 
 All sandbox execution now uses Kubernetes-native Jobs via the
 ``kubernetes_job_manager`` module.  This file exists only to prevent

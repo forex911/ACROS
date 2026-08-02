@@ -26,7 +26,6 @@ async def register(request: Request, payload: UserCreate):
 
 
 @router.post('/auth/login')
-@limiter.limit("5/minute")
 async def login(request: Request, payload: LoginRequest, response: Response):
     user = await find_by_username(payload.username)
     if not user or not verify_password(payload.password, user.get('hashed_password', '')):

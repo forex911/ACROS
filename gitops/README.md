@@ -1,4 +1,4 @@
-GitOps layout for SentinelAI
+GitOps layout for AegisAI
 
 Structure:
 

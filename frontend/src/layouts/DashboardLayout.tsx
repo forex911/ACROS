@@ -62,8 +62,8 @@ export const DashboardLayout: React.FC = () => {
       <aside className="fixed top-0 left-0 w-[280px] h-screen border-r border-[#222222] flex flex-col pt-10 pb-6 shrink-0 bg-[#000000] z-40">
         {/* Brand */}
         <div className="px-8 mb-12 flex items-center gap-4">
-          <img src="/sentinel.png" alt="Sentinel Logo" className="w-8 h-8 object-contain" />
-          <span className="font-heading font-bold text-lg tracking-widest uppercase">SENTINEL</span>
+          <img src="/aegis.png" alt="Aegis Logo" className="w-8 h-8 object-contain" />
+          <span className="font-heading font-bold text-lg tracking-widest uppercase">AEGIS</span>
         </div>
 
         {/* Navigation */}

@@ -1,6 +1,0 @@
-apiVersion: v2
-name: sentinel
-description: A Helm chart for the Sentinel-AI Enterprise Malware Analysis Platform
-type: application
-version: 1.0.0
-appVersion: "1.0.0"

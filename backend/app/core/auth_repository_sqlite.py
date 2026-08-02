@@ -20,7 +20,7 @@ class SQLiteAuthRepository(AuthRepository):
         if not db_path:
             db_path = os.path.join(
                 os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                "sentinel_auth.db",
+                "aegis_auth.db",
             )
         self.db_path = db_path
         self._ensure_tables()

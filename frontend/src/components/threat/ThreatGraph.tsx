@@ -117,7 +117,7 @@ const ThreatGraph: React.FC<ThreatGraphProps> = ({ jobId }) => {
         className="dark-theme"
       >
         <Background color="#222" gap={16} />
-        <Controls style={{ button: { backgroundColor: '#111', border: '1px solid #333', fill: '#fff' } }} />
+        <Controls className="bg-[#111] border border-[#333] fill-[#fff]" />
       </ReactFlow>
     </div>
   );

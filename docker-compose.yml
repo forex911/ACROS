@@ -1,8 +1,7 @@
-version: '3.8'
 services:
   mongodb:
     image: mongo:7
-    container_name: sentinel-mongodb
+    container_name: aegis-mongodb
     ports:
       - "27017:27017"
     volumes:
@@ -10,7 +9,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: sentinel-redis
+    container_name: aegis-redis
     ports:
       - "6379:6379"
     volumes:
@@ -18,7 +17,7 @@ services:
 
   neo4j:
     image: neo4j:5
-    container_name: sentinel-neo4j
+    container_name: aegis-neo4j
     ports:
       - "7474:7474"
       - "7687:7687"
@@ -29,7 +28,7 @@ services:
 
   minio:
     image: minio/minio
-    container_name: sentinel-minio
+    container_name: aegis-minio
     ports:
       - "9000:9000"
       - "9001:9001"

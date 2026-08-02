@@ -1,8 +1,8 @@
 # REST API Reference
 
-This document provides the complete reference for all HTTP endpoints exposed by the Sentinel-AI FastAPI backend.
+This document provides the complete reference for all HTTP endpoints exposed by the Aegis-AI FastAPI backend.
 
-**Base URL**: `http://localhost:8000` (development) or `https://api.sentinel-ai.example.com` (production)
+**Base URL**: `http://localhost:8000` (development) or `https://api.Aegis-AI.example.com` (production)
 
 ---
 

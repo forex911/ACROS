@@ -189,7 +189,7 @@ class CapabilityEngine:
                             ["T1105"], "Command and Control")
 
                 # Temp directory execution
-                if "temp" in cmd and "python" in cmd and t == "PROCESS_CREATE" and "sentinel_uploads" not in cmd:
+                if "temp" in cmd and "python" in cmd and t == "PROCESS_CREATE" and "aegis_uploads" not in cmd and "sentinel_uploads" not in cmd:
                     add_cap("Suspicious Script Execution", "High", 85,
                             "Python script executed from Temp directory",
                             ["T1059.006"], "Execution")

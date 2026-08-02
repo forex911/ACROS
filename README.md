@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">🛡️ Sentinel-AI</h1>
+  <h1 align="center">🛡️ Aegis-AI</h1>
   <p align="center">
     <strong>AI-Powered Malware Analysis &amp; Behavioral Intelligence Platform</strong>
   </p>
@@ -15,7 +15,7 @@
 
 ---
 
-Sentinel-AI is a cloud-native, distributed malware analysis platform that combines **sandboxed execution**, **real-time behavioral telemetry**, and **machine learning threat classification** to deliver automated, explainable threat intelligence reports — complete with **MITRE ATT&CK mapping**, **IOC extraction**, and **YARA rule matching**.
+Aegis-AI is a cloud-native, distributed malware analysis platform that combines **sandboxed execution**, **real-time behavioral telemetry**, and **machine learning threat classification** to deliver automated, explainable threat intelligence reports — complete with **MITRE ATT&CK mapping**, **IOC extraction**, and **YARA rule matching**.
 
 ---
 
@@ -162,7 +162,7 @@ Sentinel-AI is a cloud-native, distributed malware analysis platform that combin
 ## 📁 Project Structure
 
 ```
-sentinel-ai/
+aegis-ai/
 ├── backend/                    # FastAPI backend server
 │   ├── app/
 │   │   ├── api/routes/         # REST & WebSocket endpoints
@@ -259,8 +259,8 @@ sentinel-ai/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/forex911/sentinel.git
-cd sentinel
+git clone https://github.com/forex911/Sentinel.git aegis
+cd aegis
 ```
 
 ### 2. Start infrastructure services
@@ -292,7 +292,7 @@ Create a `.env` file in the project root (one already exists with defaults):
 
 ```env
 MONGO_URI=mongodb://localhost:27017
-DATABASE_NAME=sentinel_ai
+DATABASE_NAME=aegis_ai
 ```
 
 ### 5. Run the backend
@@ -344,10 +344,10 @@ Individual service Dockerfiles are available in `deployment/docker/`.
 
 ### Kubernetes
 
-Helm charts are in `charts/sentinel-platform/`. Deploy with:
+Helm charts are in `charts/aegis-platform/`. Deploy with:
 
 ```bash
-helm install sentinel-ai charts/sentinel-platform/ -n sentinel --create-namespace
+helm install aegis-ai charts/aegis-platform/ -n aegis --create-namespace
 ```
 
 ### GitOps (Argo CD)
@@ -367,7 +367,7 @@ Infrastructure provisioning configs for sandbox node pools are in `deployment/te
 > It relies on Python's `sys.addaudithook` and can be bypassed by `ctypes` or native extensions.  
 > For production use with real malware, deploy with **gVisor**, **Firecracker**, or **Kata Containers**.
 
-- Sandbox workers run in a dedicated Kubernetes namespace (`sentinel-workers`) on tainted, isolated node pools.
+- Sandbox workers run in a dedicated Kubernetes namespace (`aegis-workers`) on tainted, isolated node pools.
 - Network policies drop all egress except internal services (Redis, MinIO).
 - Pod security contexts enforce `readOnlyRootFilesystem`, `runAsNonRoot`, and `cap_drop: ALL`.
 - All artifacts are stored immutably in MinIO with content-addressable SHA256 keys.

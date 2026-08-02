@@ -16,7 +16,8 @@ logger = logging.getLogger("mock_sandbox")
 SANDBOX_TIMEOUT = 10           # Max seconds for sample execution
 MAX_SAMPLE_SIZE = 50 * 1024 * 1024  # 50 MB max
 RESTRICTED_ENV_VARS = {
-    "SENTINEL_SANDBOX": "1",   # Flag so samples can't impersonate the host
+    "AEGIS_SANDBOX": "1",   # Flag so samples can't impersonate the host
+    "SENTINEL_SANDBOX": "1", # Backward compatibility
 }
 # Environment variables to STRIP from the sandbox process
 STRIPPED_ENV_VARS = [
@@ -32,7 +33,7 @@ def _create_sandbox_jail(job_id: str) -> str:
     The sample is copied here and all file I/O is confined to this directory.
     Returns the path to the jail directory.
     """
-    jail_dir = os.path.join(tempfile.gettempdir(), "sentinel_sandbox", job_id)
+    jail_dir = os.path.join(tempfile.gettempdir(), "aegis_sandbox", job_id)
     os.makedirs(jail_dir, exist_ok=True)
     return jail_dir
 
@@ -48,6 +49,7 @@ def _build_restricted_env(job_id: str) -> dict:
         "SYSTEMROOT": os.environ.get("SYSTEMROOT", ""),  # Required on Windows
         "TEMP": os.environ.get("TEMP", tempfile.gettempdir()),
         "TMP": os.environ.get("TMP", tempfile.gettempdir()),
+        "AEGIS_JOB_ID": job_id,
         "SENTINEL_JOB_ID": job_id,
         "PYTHONIOENCODING": "utf-8",
     }

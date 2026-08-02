@@ -2,20 +2,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sentinel-backend
+  name: aegis-backend
   labels:
-    app: sentinel-backend
+    app: aegis-backend
 spec:
   replicas: {{ .Values.replicaCount.backend }}
   selector:
     matchLabels:
-      app: sentinel-backend
+      app: aegis-backend
   template:
     metadata:
       labels:
-        app: sentinel-backend
+        app: aegis-backend
     spec:
-      serviceAccountName: sentinel-backend-sa
+      serviceAccountName: aegis-backend-sa
       containers:
         - name: backend
           image: "{{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}"
@@ -40,10 +40,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: sentinel-backend
+  name: aegis-backend
 spec:
   selector:
-    app: sentinel-backend
+    app: aegis-backend
   ports:
     - port: {{ .Values.service.backend.port }}
       targetPort: 8000

@@ -1,4 +1,4 @@
-Write-Host "[+] Starting Sentinel Local Infrastructure..." -ForegroundColor Cyan
+Write-Host "[+] Starting Aegis Local Infrastructure..." -ForegroundColor Cyan
 docker compose up -d mongodb redis neo4j minio
 
 Write-Host "[+] Waiting for services to initialize..." -ForegroundColor Yellow

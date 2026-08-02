@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-echo "[+] Starting Sentinel Local Infrastructure..."
+echo "[+] Starting Aegis Local Infrastructure..."
 docker compose up -d mongodb redis neo4j minio
 
 echo "[+] Waiting for services to initialize..."

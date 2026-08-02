@@ -1,28 +1,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sentinel-worker
-  namespace: sentinel-workers
+  name: aegis-worker
+  namespace: aegis-workers
   labels:
-    app: sentinel-worker
+    app: aegis-worker
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: sentinel-worker
+      app: aegis-worker
   template:
     metadata:
       labels:
-        app: sentinel-worker
+        app: aegis-worker
     spec:
-      serviceAccountName: sentinel-worker-sa
+      serviceAccountName: aegis-worker-sa
       containers:
         - name: worker
-          image: sentinel/sandbox-worker:latest
+          image: aegis/sandbox-worker:latest
           imagePullPolicy: IfNotPresent
           envFrom:
             - secretRef:
-                name: sentinel-worker-secrets
+                name: aegis-worker-secrets
           resources:
             requests:
               cpu: "250m"
@@ -49,11 +49,11 @@ spec:
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
-  name: sentinel-worker-scaledobject
-  namespace: sentinel-workers
+  name: aegis-worker-scaledobject
+  namespace: aegis-workers
 spec:
   scaleTargetRef:
-    name: sentinel-worker
+    name: aegis-worker
   pollingInterval: 30  # seconds
   cooldownPeriod:  300
   minReplicaCount: 1

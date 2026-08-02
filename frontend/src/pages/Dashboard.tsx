@@ -1,12 +1,11 @@
 import React, { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import api from '../api/client';
 import { StatCard } from '../components/dashboard/StatCard';
-import { Activity, ShieldAlert, Cpu, Database, ChevronDown, Calendar, FileSearch } from 'lucide-react';
+import { Activity, ShieldAlert, Cpu, Database, ChevronDown, FileSearch } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 gsap.registerPlugin(useGSAP);
@@ -16,7 +15,7 @@ const Dashboard: React.FC = () => {
   const [timeframe, setTimeframe] = useState('1W');
   const navigate = useNavigate();
 
-  const { data, isLoading, error, isFetching } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['dashboardOverview', timeframe],
     queryFn: async () => {
       const res = await api.get(`/dashboard/overview?timeframe=${timeframe}`);
@@ -31,26 +30,26 @@ const Dashboard: React.FC = () => {
       // Header animation
       gsap.fromTo(".gsap-header", 
         { opacity: 0, y: -20 },
-        { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }
+        { opacity: 1, y: 0, duration: 0.6, ease: "power3.out", clearProps: "transform,opacity" }
       );
 
       // Stat cards stagger
       gsap.fromTo(".gsap-card",
-        { opacity: 0, y: 30, scale: 0.95 },
-        { opacity: 1, y: 0, scale: 1, duration: 0.8, stagger: 0.1, ease: "back.out(1.2)", delay: 0.2 }
+        { opacity: 0, y: 25, scale: 0.96 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.6, stagger: 0.08, ease: "power2.out", delay: 0.15, clearProps: "transform,opacity" }
       );
 
       // Panels stagger
       gsap.fromTo(".gsap-panel",
-        { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, duration: 1, stagger: 0.15, ease: "power3.out", delay: 0.4 }
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 0.7, stagger: 0.12, ease: "power3.out", delay: 0.3, clearProps: "transform,opacity" }
       );
     }
   }, { dependencies: [isLoading, error], scope: container });
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full text-[#ffffff] font-mono uppercase tracking-widest">
+      <div className="flex items-center justify-center h-full min-h-[400px] text-[#ffffff] font-mono uppercase tracking-widest">
         <div className="w-6 h-6 border-2 border-[#333333] border-t-[#ffffff] rounded-full animate-spin mr-4" />
         LOADING DASHBOARD...
       </div>
@@ -120,7 +119,7 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div className="flex-1 w-full min-h-0" style={{ minWidth: 0 }}>
-            <ResponsiveContainer width="100%" height="100%" minWidth={100}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={100} debounce={50}>
               <AreaChart data={mappedChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorScans" x1="0" y1="0" x2="0" y2="1">
@@ -141,8 +140,8 @@ const Dashboard: React.FC = () => {
                   itemStyle={{ fontWeight: 'bold' }}
                 />
                 <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontFamily: 'JetBrains Mono', fontSize: '12px' }} />
-                <Area type="monotone" dataKey="Scans" stroke="#ffffff" strokeWidth={2} fillOpacity={1} fill="url(#colorScans)" isAnimationActive={true} animationDuration={800} />
-                <Area type="monotone" dataKey="Threats" stroke="#ef4444" strokeWidth={2} fillOpacity={1} fill="url(#colorThreats)" isAnimationActive={true} animationDuration={800} />
+                <Area type="monotone" dataKey="Scans" stroke="#ffffff" strokeWidth={2} fillOpacity={1} fill="url(#colorScans)" isAnimationActive={false} />
+                <Area type="monotone" dataKey="Threats" stroke="#ef4444" strokeWidth={2} fillOpacity={1} fill="url(#colorThreats)" isAnimationActive={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -174,7 +173,7 @@ const Dashboard: React.FC = () => {
             ))}
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 min-h-0" data-lenis-prevent>
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 min-h-0 overscroll-contain" data-lenis-prevent>
             <div className="space-y-6">
               {threatFeed.length === 0 && (
                 <div className="text-[#888888] text-xs font-mono text-center py-10 uppercase">No recent threats detected.</div>
@@ -210,7 +209,7 @@ const Dashboard: React.FC = () => {
           <Link to="/workspace" className="text-xs font-mono text-[#666666] tracking-widest uppercase hover:text-[#ffffff] transition-colors">View All</Link>
         </div>
         
-        <div className="min-h-[420px] overflow-y-auto custom-scrollbar pr-2" data-lenis-prevent>
+        <div className="w-full overflow-x-auto custom-scrollbar">
           <table className="w-full text-left">
             <thead className="text-[11px] text-[#888888] font-mono uppercase tracking-widest border-b border-[#333333]">
               <tr>

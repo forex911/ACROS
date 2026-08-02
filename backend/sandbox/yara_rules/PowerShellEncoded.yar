@@ -2,7 +2,7 @@ rule PowerShellEncoded
 {
     meta:
         description = "Detects encoded PowerShell execution commands"
-        author = "Sentinel-AI"
+        author = "Aegis-AI"
         severity = "High"
 
     strings:

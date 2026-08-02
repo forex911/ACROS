@@ -155,6 +155,7 @@ class ArtifactCollector:
     IGNORE_PATTERNS = [
         "__pycache__",
         ".pyc",
+        "aegis_uploads",
         "sentinel_uploads",
         "\\Temp\\pip",
         "/tmp/pip",
@@ -398,7 +399,7 @@ class ArtifactClassifier:
 
 class RecursiveAnalyzer:
     """
-    Runs the full Sentinel static analysis pipeline on each collected
+    Runs the full Aegis static analysis pipeline on each collected
     artifact: hashing, strings, PE/Python analysis, YARA, IOC extraction,
     MITRE mapping, and capability detection.
 
@@ -637,7 +638,7 @@ class ArchiveExpander:
 
         extract_dir = None
         try:
-            extract_dir = tempfile.mkdtemp(prefix="sentinel_archive_")
+            extract_dir = tempfile.mkdtemp(prefix="aegis_archive_")
 
             # Try ZIP extraction
             if zipfile.is_zipfile(archive_path):

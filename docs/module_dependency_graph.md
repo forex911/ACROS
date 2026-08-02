@@ -1,4 +1,4 @@
-# Sentinel — Module Dependency Graph
+# Aegis — Module Dependency Graph
 
 ## Backend Module Map
 

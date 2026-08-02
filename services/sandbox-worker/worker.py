@@ -24,7 +24,7 @@ celery_app = Celery('sandbox_worker', broker=CELERY_BROKER_URL)
 
 # DB clients (synchronous pymongo and redis for worker process)
 mongo_client = pymongo.MongoClient(MONGO_URI)
-mongo_db = mongo_client.get_database('sentinel_ai')
+mongo_db = mongo_client.get_database(os.getenv('DATABASE_NAME', 'aegis_ai'))
 jobs_coll = mongo_db.get_collection('jobs')
 
 redis_client = redis.from_url(REDIS_URL)

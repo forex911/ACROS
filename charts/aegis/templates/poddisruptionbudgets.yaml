@@ -2,21 +2,21 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: backend-pdb
-  namespace: sentinel-backend
+  namespace: aegis-backend
 spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app: sentinel-backend
+      app: aegis-backend
 
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: worker-pdb
-  namespace: sentinel-workers
+  namespace: aegis-workers
 spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app: sentinel-worker
+      app: aegis-worker

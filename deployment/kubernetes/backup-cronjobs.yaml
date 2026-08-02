@@ -17,7 +17,7 @@ spec:
             - -c
             - |
               echo "Starting MongoDB backup..."
-              mongodump --uri="mongodb://mongodb-service:27017/sentinel_ai" --archive=/tmp/mongodb_backup.gz --gzip
+              mongodump --uri="mongodb://mongodb-service:27017/Aegis_ai" --archive=/tmp/mongodb_backup.gz --gzip
               echo "Uploading to MinIO..."
               curl -T /tmp/mongodb_backup.gz "http://minio-service:9000/backups/mongodb_$(date +%Y%m%d).gz" -H "x-amz-acl: private" -u "minioadmin:minioadmin"
               echo "Backup complete."

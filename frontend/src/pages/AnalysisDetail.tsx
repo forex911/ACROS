@@ -27,7 +27,10 @@ const AnalysisDetail: React.FC = () => {
       const res = await api.get(`/analysis/${jobId}`);
       return res.data;
     },
-    refetchInterval: (data) => (data?.status?.toLowerCase() === 'completed' || data?.status?.toLowerCase() === 'failed' ? false : 3000),
+    refetchInterval: (query) => {
+      const data = query.state.data as any;
+      return (data?.status?.toLowerCase() === 'completed' || data?.status?.toLowerCase() === 'failed' ? false : 3000);
+    },
   });
 
   const actualJobId = analysis?.file_id || jobId;

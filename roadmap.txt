@@ -1,7 +1,7 @@
-# Sentinel v1.0 - Productization Master Plan
+# Aegis v1.0 - Productization Master Plan
 
 ## Mission
-Transform Sentinel from a development project into a production-quality self-hosted malware analysis platform.
+Transform Aegis from a development project into a production-quality self-hosted malware analysis platform.
 The objective is stability, security, maintainability, deployment simplicity, and commercial readiness.
 
 **Focus:** Refining, integrating, hardening, and packaging the existing architecture. No unnecessary new features.

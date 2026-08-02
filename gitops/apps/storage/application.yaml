@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: sentinel-storage-dev
+  name: aegis-storage-dev
   namespace: argocd
 spec:
-  project: sentinel-project
+  project: aegis-project
   source:
     repoURL: "REPLACE_WITH_REPO"
     targetRevision: HEAD
     path: deployment/kubernetes/k8s/overlays/dev
   destination:
     server: https://kubernetes.default.svc
-    namespace: sentinel-storage
+    namespace: aegis-storage
   syncPolicy:
     automated:
       prune: true

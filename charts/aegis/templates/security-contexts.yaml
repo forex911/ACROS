@@ -1,17 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sentinel-worker
-  namespace: sentinel-workers
+  name: aegis-worker
+  namespace: aegis-workers
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: sentinel-worker
+      app: aegis-worker
   template:
     metadata:
       labels:
-        app: sentinel-worker
+        app: aegis-worker
     spec:
       # Enforce execution on dedicated, tainted isolated worker nodes
       affinity:
@@ -40,7 +40,7 @@ spec:
       
       containers:
       - name: worker
-        image: ghcr.io/sentinel-ai/worker:latest
+        image: ghcr.io/aegis-ai/worker:latest
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true

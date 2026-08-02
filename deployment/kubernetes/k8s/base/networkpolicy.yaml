@@ -6,7 +6,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: default-deny-all
-  namespace: sentinel-sandbox
+  namespace: aegis-sandbox
 spec:
   podSelector: {} # Selects all pods in this namespace
   policyTypes:
@@ -18,13 +18,13 @@ spec:
 ---
 # -----------------------------------------------------------------------------
 # Allow DNS Resolution for Sandbox Pods
-# Required to resolve the internal S3 endpoint (minio.sentinel-storage.svc.cluster.local)
+# Required to resolve the internal S3 endpoint (minio.aegis-storage.svc.cluster.local)
 # -----------------------------------------------------------------------------
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-dns-resolution
-  namespace: sentinel-sandbox
+  namespace: aegis-sandbox
 spec:
   podSelector: {}
   policyTypes:
@@ -48,18 +48,18 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-egress-to-storage
-  namespace: sentinel-sandbox
+  namespace: aegis-sandbox
 spec:
   podSelector:
     matchLabels:
-      app: sentinel-sandbox
+      app: aegis-sandbox
   policyTypes:
     - Egress
   egress:
     - to:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: sentinel-storage
+              kubernetes.io/metadata.name: aegis-storage
           podSelector:
             matchLabels:
               app: minio
@@ -75,18 +75,18 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-egress-to-redis
-  namespace: sentinel-sandbox
+  namespace: aegis-sandbox
 spec:
   podSelector:
     matchLabels:
-      app: sentinel-sandbox
+      app: aegis-sandbox
   policyTypes:
     - Egress
   egress:
     - to:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: sentinel-backend
+              kubernetes.io/metadata.name: aegis-backend
           podSelector:
             matchLabels:
               app: redis

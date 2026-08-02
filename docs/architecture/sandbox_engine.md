@@ -1,6 +1,6 @@
 # Sandbox Engine
 
-The Sentinel-AI Sandbox Engine is responsible for safely executing untrusted artifacts in an isolated environment while capturing comprehensive OS-level telemetry. It supports multiple isolation backends ranging from a lightweight development wrapper to hardware-virtualized microVMs.
+The Aegis-AI Sandbox Engine is responsible for safely executing untrusted artifacts in an isolated environment while capturing comprehensive OS-level telemetry. It supports multiple isolation backends ranging from a lightweight development wrapper to hardware-virtualized microVMs.
 
 ---
 
@@ -26,7 +26,7 @@ In malware analysis, the primary threat is that an executing binary escapes the 
 
 ## Execution Modes
 
-Sentinel-AI supports an `engine_selector.py` that delegates payload detonation to one of four backends:
+Aegis-AI supports an `engine_selector.py` that delegates payload detonation to one of four backends:
 
 | Mode | Isolation Level | Telemetry Method | Use Case |
 |---|---|---|---|
@@ -41,7 +41,7 @@ Used exclusively for development. The sandbox:
 
 1. Creates a temporary directory (`tempfile.mkdtemp`).
 2. Copies the target script into the isolated directory.
-3. Restricts `sys.path` and CWD to prevent access to Sentinel-AI source code.
+3. Restricts `sys.path` and CWD to prevent access to Aegis-AI source code.
 4. Injects `sys.addaudithook` to monitor Python calls (`subprocess.Popen`, `socket.connect`, file `open`, etc.).
 5. Executes the script via `runpy` within the modified environment.
 

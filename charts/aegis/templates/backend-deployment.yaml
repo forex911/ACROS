@@ -1,36 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sentinel-backend
-  namespace: sentinel-backend
+  name: aegis-backend
+  namespace: aegis-backend
   labels:
-    app: sentinel-backend
+    app: aegis-backend
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: sentinel-backend
+      app: aegis-backend
   template:
     metadata:
       labels:
-        app: sentinel-backend
+        app: aegis-backend
     spec:
-      serviceAccountName: sentinel-backend-sa
+      serviceAccountName: aegis-backend-sa
       securityContext:
         runAsNonRoot: true
         runAsUser: 1001
         fsGroup: 1001
       containers:
         - name: backend
-          image: sentinel/backend:latest
+          image: aegis/backend:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
           envFrom:
             - secretRef:
-                name: sentinel-backend-secrets
+                name: aegis-backend-secrets
             - configMapRef:
-                name: sentinel-backend-config
+                name: aegis-backend-config
           resources:
             requests:
               cpu: "200m"
@@ -58,11 +58,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: sentinel-backend
-  namespace: sentinel-backend
+  name: aegis-backend
+  namespace: aegis-backend
 spec:
   selector:
-    app: sentinel-backend
+    app: aegis-backend
   ports:
     - protocol: TCP
       port: 80
@@ -73,8 +73,8 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: sentinel-backend-config
-  namespace: sentinel-backend
+  name: aegis-backend-config
+  namespace: aegis-backend
 data:
   UPLOAD_DIR: "/tmp/uploads"
   LOG_LEVEL: "INFO"
@@ -83,15 +83,15 @@ data:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: sentinel-backend-secrets
-  namespace: sentinel-backend
+  name: aegis-backend-secrets
+  namespace: aegis-backend
 type: Opaque
 stringData:
   # Replace values with secrets (do not commit real credentials)
-  MONGO_URI: "mongodb://mongo-0.mongo-svc.sentinel-storage.svc.cluster.local:27017"
-  REDIS_URL: "redis://redis.sentinel-storage.svc.cluster.local:6379/0"
-  CELERY_BROKER_URL: "redis://redis.sentinel-storage.svc.cluster.local:6379/0"
-  S3_ENDPOINT: "http://minio.sentinel-storage:9000"
+  MONGO_URI: "mongodb://mongo-0.mongo-svc.aegis-storage.svc.cluster.local:27017"
+  REDIS_URL: "redis://redis.aegis-storage.svc.cluster.local:6379/0"
+  CELERY_BROKER_URL: "redis://redis.aegis-storage.svc.cluster.local:6379/0"
+  S3_ENDPOINT: "http://minio.aegis-storage:9000"
   S3_ACCESS_KEY: "minio"
   S3_SECRET_KEY: "minio123"
   S3_BUCKET: "uploads"

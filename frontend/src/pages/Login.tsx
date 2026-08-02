@@ -4,7 +4,8 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { useAuth } from '../hooks/useAuth';
 import api from '../api/client';
-import { Lock, User as UserIcon, Shield } from 'lucide-react';
+import axios from 'axios';
+import { Lock, User as UserIcon } from 'lucide-react';
 
 gsap.registerPlugin(useGSAP);
 
@@ -41,16 +42,26 @@ export const Login: React.FC = () => {
     setError('');
     setIsLoggingIn(true);
 
+    // Clear any stale tokens from previous sessions
+    localStorage.removeItem('access_token');
+    delete api.defaults.headers.common['Authorization'];
+
+    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+
     try {
-      const res = await api.post('/auth/login', { username, password });
+      // Use raw axios to bypass interceptors completely
+      const res = await axios.post(`${API_URL}/auth/login`, { username, password }, {
+        headers: { 'Content-Type': 'application/json' },
+        withCredentials: true,
+      });
       const { access_token } = res.data;
-      const userRes = await api.get('/auth/me', {
+      const userRes = await axios.get(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${access_token}` }
       });
       login(access_token, userRes.data);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Authentication failed. Use admin / sentinel123 for demo.');
+      setError(err.response?.data?.detail || 'Authentication failed. Use admin / aegis123 for demo.');
       setIsLoggingIn(false);
       
       // Error shake animation
@@ -70,9 +81,9 @@ export const Login: React.FC = () => {
         {/* Logo */}
         <div className="flex flex-col items-center mb-12">
           <div className="gsap-element w-24 h-24 flex items-center justify-center mb-4">
-            <img src="/sentinel.png" alt="Sentinel Logo" className="w-full h-full object-contain drop-shadow-md" />
+            <img src="/aegis.png" alt="Aegis Logo" className="w-full h-full object-contain drop-shadow-md" />
           </div>
-          <h2 className="gsap-element text-4xl font-heading font-black text-[#ffffff] tracking-tighter uppercase">Sentinel</h2>
+          <h2 className="gsap-element text-4xl font-heading font-black text-[#ffffff] tracking-tighter uppercase">Aegis</h2>
           <p className="gsap-element text-[#888888] font-mono text-xs mt-2 tracking-widest uppercase">Authorization Protocol</p>
         </div>
 
@@ -138,7 +149,7 @@ export const Login: React.FC = () => {
           <div className="text-xs font-mono flex items-center justify-center gap-3">
             <code className="text-[#ffffff]">admin</code>
             <span className="text-[#444444]">/</span>
-            <code className="text-[#ffffff]">sentinel123</code>
+            <code className="text-[#ffffff]">aegis123</code>
           </div>
         </div>
       </div>

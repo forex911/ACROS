@@ -1,6 +1,6 @@
 # System Architecture Overview
 
-Sentinel-AI is a distributed, cloud-native malware analysis and behavioral intelligence platform. It employs an event-driven architecture with isolated execution sandboxes, real-time telemetry extraction, and intelligence-driven threat classification.
+Aegis-AI is a distributed, cloud-native malware analysis and behavioral intelligence platform. It employs an event-driven architecture with isolated execution sandboxes, real-time telemetry extraction, and intelligence-driven threat classification.
 
 ---
 
@@ -192,8 +192,8 @@ sequenceDiagram
 
 The platform runs on Kubernetes, strictly isolated using Pod Security Standards and Network Policies.
 
-- **Frontend/Backend Namespaces**: `sentinel-backend`, `sentinel-storage`
-- **Isolated Worker Namespace**: `sentinel-workers`
+- **Frontend/Backend Namespaces**: `aegis-backend`, `aegis-storage`
+- **Isolated Worker Namespace**: `aegis-workers`
   - Runs on dedicated, tainted node pools (`workload-type=isolated-sandbox`).
   - NetworkPolicies drop ALL egress traffic except specific internal IPs (Redis, MinIO).
   - Pod Security contexts enforce `readOnlyRootFilesystem`, `runAsNonRoot`, and `cap_drop: ALL`.

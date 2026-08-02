@@ -29,7 +29,7 @@ from app.database.neo4j import get_neo4j_async_session
 from app.utils.object_store import s3_client
 from app.core.config import settings
 from app.core.limiter import setup_rate_limiting
-from app.core.exceptions import SentinelException, sentinel_exception_handler, generic_exception_handler
+from app.core.exceptions import AegisException, aegis_exception_handler, generic_exception_handler
 import logging
 
 # Setup OpenTelemetry
@@ -38,7 +38,7 @@ trace.set_tracer_provider(TracerProvider())
 # trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 
 app = FastAPI(
-    title="SentinelAI",
+    title="AegisAI",
     version="1.0.0"
 )
 
@@ -47,7 +47,7 @@ async def on_startup():
     await init_db()
     
     # Run startup diagnostics
-    print("\n--- Sentinel Infrastructure Diagnostics ---")
+    print("\n--- Aegis Infrastructure Diagnostics ---")
     
     # 1. MongoDB
     try:
@@ -120,7 +120,7 @@ async def on_startup():
 setup_rate_limiting(app)
 
 # Global Exception Handlers
-app.add_exception_handler(SentinelException, sentinel_exception_handler)
+app.add_exception_handler(AegisException, aegis_exception_handler)
 app.add_exception_handler(Exception, generic_exception_handler)
 
 # CORS
@@ -165,7 +165,7 @@ app.include_router(threats_router)
 @app.get("/")
 async def root():
     return {
-        "message": "SentinelAI Backend Running"
+        "message": "AegisAI Backend Running"
     }
 
 @app.get("/health")

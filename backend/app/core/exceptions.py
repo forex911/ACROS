@@ -3,35 +3,38 @@ from fastapi.responses import JSONResponse
 from app.core.metrics import sandbox_errors_total
 import logging
 
-logger = logging.getLogger("sentinel.exceptions")
+logger = logging.getLogger("aegis.exceptions")
 
-class SentinelException(Exception):
-    """Base exception for all Sentinel-AI errors."""
+class AegisException(Exception):
+    """Base exception for all Aegis-AI errors."""
     def __init__(self, message: str, status_code: int = 400, context: dict = None):
         self.message = message
         self.status_code = status_code
         self.context = context or {}
         super().__init__(self.message)
 
+# Backward-compatibility alias
+SentinelException = AegisException
 
-class SandboxExecutionError(SentinelException):
+
+class SandboxExecutionError(AegisException):
     """Raised when sandbox execution fails unexpectedly."""
     def __init__(self, message: str, context: dict = None):
         super().__init__(message, status_code=502, context=context)
 
 
-class AnalysisTimeoutError(SentinelException):
+class AnalysisTimeoutError(AegisException):
     """Raised when static or dynamic analysis exceeds configured timeouts."""
     def __init__(self, message: str, context: dict = None):
         super().__init__(message, status_code=504, context=context)
 
 
-async def sentinel_exception_handler(request: Request, exc: SentinelException):
+async def aegis_exception_handler(request: Request, exc: AegisException):
     """
-    Global exception handler for SentinelException.
+    Global exception handler for AegisException.
     Ensures safe JSON responses without leaking internal stack traces to the client.
     """
-    logger.error(f"SentinelException ({exc.status_code}): {exc.message}", extra={"context": exc.context})
+    logger.error(f"AegisException ({exc.status_code}): {exc.message}", extra={"context": exc.context})
     
     if isinstance(exc, SandboxExecutionError) or isinstance(exc, AnalysisTimeoutError):
         sandbox_errors_total.inc()
@@ -40,6 +43,9 @@ async def sentinel_exception_handler(request: Request, exc: SentinelException):
         status_code=exc.status_code,
         content={"error": exc.message, "status": "error", "type": exc.__class__.__name__}
     )
+
+# Backward-compatibility alias
+sentinel_exception_handler = aegis_exception_handler
 
 async def generic_exception_handler(request: Request, exc: Exception):
     """

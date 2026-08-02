@@ -126,7 +126,7 @@ Python files are analyzed via AST walking; all other files are analyzed via PE h
 2. **Local Sandbox** (`local_sandbox.py`) creates an isolated execution environment:
    - Creates a temporary directory (`tempfile.mkdtemp`)
    - Copies the target script into the isolated directory
-   - Restricts `sys.path` and CWD to prevent access to Sentinel-AI source code
+   - Restricts `sys.path` and CWD to prevent access to Aegis-AI source code
    - Injects `sys.addaudithook` to monitor OS-level Python calls (`subprocess.Popen`, `socket.connect`, file `open`, etc.)
    - Executes the script via `runpy`
 3. **Sandbox Runner** (`sandbox_runner.py`) reads telemetry from `stdout` asynchronously, parses valid JSON payloads, and publishes them to the Redis PubSub channel `job_updates:{job_id}`.

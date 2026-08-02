@@ -1,5 +1,5 @@
 """
-Sentinel Structured Logging
+Aegis Structured Logging
 ============================
 Standardized JSON-structured logging using structlog.
 Every log entry includes:

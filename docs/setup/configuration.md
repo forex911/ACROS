@@ -1,6 +1,6 @@
 # Configuration Reference
 
-This document lists all environment variables used by Sentinel-AI, organized by component.
+This document lists all environment variables used by Aegis-AI, organized by component.
 
 ---
 
@@ -22,7 +22,7 @@ Create a `.env` file in the `backend/` directory.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `MONGODB_URI` | **Yes** | — | MongoDB connection string (e.g., `mongodb://localhost:27017/sentinel`) |
+| `MONGODB_URI` | **Yes** | — | MongoDB connection string (e.g., `mongodb://localhost:27017/Aegis`) |
 | `REDIS_URI` | **Yes** | — | Redis connection string (e.g., `redis://localhost:6379/0`) |
 | `NEO4J_URI` | No | — | Neo4j Bolt connection string (e.g., `bolt://localhost:7687`) |
 | `NEO4J_USER` | No | `neo4j` | Neo4j authentication username |
@@ -63,7 +63,7 @@ Create a `.env` file in the `backend/` directory.
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | No | — | OpenTelemetry collector endpoint |
-| `OTEL_SERVICE_NAME` | No | `sentinel-backend` | Service name for distributed tracing |
+| `OTEL_SERVICE_NAME` | No | `aegis-backend` | Service name for distributed tracing |
 
 ---
 
@@ -86,7 +86,7 @@ When running via Docker Compose, environment variables are configured in `docker
 services:
   backend:
     environment:
-      MONGODB_URI: mongodb://mongo:27017/sentinel
+      MONGODB_URI: mongodb://mongo:27017/Aegis
       REDIS_URI: redis://redis:6379/0
       NEO4J_URI: bolt://neo4j:7687
 
@@ -106,8 +106,8 @@ In Kubernetes deployments, sensitive values are stored as `Secrets` and non-sens
 apiVersion: v1
 kind: Secret
 metadata:
-  name: sentinel-secrets
-  namespace: sentinel
+  name: Aegis-secrets
+  namespace: Aegis
 type: Opaque
 stringData:
   JWT_SECRET_KEY: "your-secret-key"
@@ -117,10 +117,10 @@ stringData:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: sentinel-config
-  namespace: sentinel
+  name: Aegis-config
+  namespace: Aegis
 data:
-  MONGODB_URI: "mongodb://mongo-svc:27017/sentinel"
+  MONGODB_URI: "mongodb://mongo-svc:27017/Aegis"
   REDIS_URI: "redis://redis-svc:6379/0"
   SANDBOX_ENGINE: "gvisor"
   SANDBOX_TIMEOUT: "30"

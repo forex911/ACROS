@@ -47,7 +47,7 @@ def instrument_socket(job_id):
 WRITTEN_FILES = set()
 
 def finalize_file_writes():
-    job_id = os.environ.get("SENTINEL_JOB_ID", "unknown")
+    job_id = os.environ.get("AEGIS_JOB_ID") or os.environ.get("SENTINEL_JOB_ID", "unknown")
     for file_path in list(WRITTEN_FILES):
         if not os.path.exists(file_path):
             continue
@@ -71,7 +71,7 @@ def finalize_file_writes():
             pass
 
 def audit_hook(event, args):
-    job_id = os.environ.get("SENTINEL_JOB_ID", "unknown")
+    job_id = os.environ.get("AEGIS_JOB_ID") or os.environ.get("SENTINEL_JOB_ID", "unknown")
     
     # Process spawning
     if event == "os.system":
@@ -186,6 +186,7 @@ if __name__ == "__main__":
     job_id = sys.argv[1]
     target_script = sys.argv[2]
     
+    os.environ["AEGIS_JOB_ID"] = job_id
     os.environ["SENTINEL_JOB_ID"] = job_id
     
     sys.addaudithook(audit_hook)

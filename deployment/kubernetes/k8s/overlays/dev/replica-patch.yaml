@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sentinel-backend
-  namespace: sentinel-backend
+  name: aegis-backend
+  namespace: aegis-backend
 spec:
   replicas: 1
