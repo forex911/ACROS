@@ -10,7 +10,7 @@ from app.analysis.capability_engine import CapabilityEngine
 from app.analysis.behavior_engine import BehaviorEngine
 from app.analysis.threat_classifier import ThreatClassifier
 from app.analysis.impact_engine import ImpactEngine
-from app.analysis.risk_engine_v2 import RiskEngineV2
+from app.analysis.v3.risk_engine_v3 import RiskEngineV3
 from app.analysis.evidence_envelope import EvidenceEnvelope
 from app.analysis.analyst_report import AnalystReportGenerator
 from app.analysis.deobfuscation import UniversalDeobfuscator
@@ -208,11 +208,11 @@ async def generate_report_pipeline(job_id: str, local_path: str, filename: str):
                 threat=threat,
             )
             
-            risk_assessment = RiskEngineV2.calculate_risk(envelope)
+            risk_assessment = RiskEngineV3.calculate_risk(envelope)
             
             # Propagate risk from child artifacts
             max_child_risk = artifact_report.get("max_child_risk", 0)
-            risk_assessment = RiskEngineV2.propagate_artifact_risk(risk_assessment, max_child_risk)
+            risk_assessment = RiskEngineV3.propagate_artifact_risk(risk_assessment, max_child_risk)
             
             analyst_report = AnalystReportGenerator.generate(
                 capabilities, behavior_chains, threat, list({m.get("tactic", m.get("name", "Unknown")) for m in mitre_mappings}), impact, risk_assessment
@@ -248,9 +248,16 @@ async def generate_report_pipeline(job_id: str, local_path: str, filename: str):
                     envelope.graph_chain_length = chain_length
                     envelope.graph_has_c2_persistence = has_c2_persist
                     # Re-score with graph data
-                    risk_assessment = RiskEngineV2.calculate_risk(envelope)
+                    risk_assessment = RiskEngineV3.calculate_risk(envelope)
                     # Re-propagate child risk
-                    risk_assessment = RiskEngineV2.propagate_artifact_risk(risk_assessment, max_child_risk)
+                    risk_assessment = RiskEngineV3.propagate_artifact_risk(risk_assessment, max_child_risk)
+                    
+                    # Regenerate AI summary to reflect updated score
+                    analyst_report = AnalystReportGenerator.generate(
+                        capabilities, behavior_chains, threat, list({m.get("tactic", m.get("name", "Unknown")) for m in mitre_mappings}), impact, risk_assessment
+                    )
+                    ai_summary = analyst_report.executive_summary
+
                     await append_log(job_id, f"[Pipeline] Graph correlation: chain={chain_length}, bonus=+{graph_bonus}")
             except Exception as e:
                 logger.error(f"Graph correlation scoring failed (non-fatal): {e}")

@@ -33,10 +33,10 @@ export const AttackMatrix: React.FC = () => {
   if (tactics.length === 0) return <div className="text-[#666666] font-mono text-xs uppercase tracking-widest p-10 border border-[#222222] text-center m-4">NO ACTIVE THREATS DETECTED.</div>;
   
   return (
-    <div className="w-full h-full overflow-x-auto bg-[#000000] p-4 custom-scrollbar min-w-0" data-lenis-prevent>
-      <div className="flex gap-6 min-w-max">
+    <div className="w-max bg-[#000000] p-4" data-lenis-prevent>
+      <div className="flex gap-8 min-w-max">
         {tactics.map((tactic: Tactic) => (
-          <div key={tactic.id} className="w-[280px] flex-shrink-0">
+          <div key={tactic.id} className="w-[300px] flex-shrink-0">
             {/* Tactic Header */}
             <div className="bg-[#111111] border-2 border-[#ffffff] p-4 mb-4 flex items-center justify-between">
                <div>
@@ -49,7 +49,7 @@ export const AttackMatrix: React.FC = () => {
             </div>
 
             {/* Techniques List */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               {tactic.techniques.map((technique) => (
                 <div 
                   key={technique.id} 

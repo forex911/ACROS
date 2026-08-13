@@ -108,10 +108,10 @@ def audit_hook(event, args):
     # File I/O
     elif event == "open":
         file_path = args[0]
-        mode = args[1] if len(args) > 1 else 'r'
+        mode = args[1] if len(args) > 1 and args[1] is not None else 'r'
         if isinstance(file_path, str):
             # Only log writes to suspicious or important locations, or just log all writes
-            if 'w' in mode or 'a' in mode or '+' in mode:
+            if 'w' in str(mode) or 'a' in str(mode) or '+' in str(mode):
                 if not file_path.endswith('.pyc') and '__pycache__' not in file_path:
                     abs_path = os.path.abspath(file_path)
                     WRITTEN_FILES.add(abs_path)

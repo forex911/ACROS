@@ -105,10 +105,11 @@ class GraphIngestionStage(PipelineStage):
                     reasoning=graph_reasons,
                 )
                 # Re-score with graph evidence
-                context.risk_assessment = RiskEngineV2.calculate_risk(context.envelope)
+                from app.analysis.v3.risk_engine_v3 import RiskEngineV3
+                context.risk_assessment = RiskEngineV3.calculate_risk(context.envelope)
                 # Re-propagate child risk
                 max_child_risk = context.artifact_report.get("max_child_risk", 0)
-                context.risk_assessment = RiskEngineV2.propagate_artifact_risk(
+                context.risk_assessment = RiskEngineV3.propagate_artifact_risk(
                     context.risk_assessment, max_child_risk
                 )
                 context.log(f"[Graph] Correlation: chain={chain_length}, bonus=+{graph_bonus}")

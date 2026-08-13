@@ -6,13 +6,13 @@ import { AttackMatrix } from '../components/threat/AttackMatrix';
 const AttackDashboard: React.FC = () => {
   return (
     <motion.div
-      className="flex flex-col h-full space-y-8 max-w-[1400px] mx-auto"
+      className="flex flex-col w-full overflow-hidden"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
     >
       {/* Header */}
-      <div className="p-8 border border-[#333333] bg-[#000000] flex items-center justify-between">
+      <div className="sticky top-[88px] z-30 p-8 border border-[#333333] bg-[#000000] flex items-center justify-between">
         <div className="flex items-center gap-6">
           <div className="w-12 h-12 border border-[#ffffff] flex items-center justify-center text-[#ffffff]">
             <Target className="w-6 h-6" />
@@ -38,14 +38,13 @@ const AttackDashboard: React.FC = () => {
 
       {/* Matrix */}
       <motion.div
-        className="flex-1 min-h-[600px] border border-[#333333] bg-[#000000] relative flex flex-col"
+        className="border border-[#333333] bg-[#000000] mt-12 p-6 overflow-x-auto overflow-y-auto custom-scrollbar"
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2, duration: 0.4, ease: "easeOut" }}
+        data-lenis-prevent
       >
-        <div className="flex-1 w-full h-full p-6 overflow-x-auto overflow-y-auto custom-scrollbar" data-lenis-prevent>
-          <AttackMatrix />
-        </div>
+        <AttackMatrix />
       </motion.div>
     </motion.div>
   );

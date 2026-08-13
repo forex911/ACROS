@@ -4,7 +4,7 @@ import os
 # Regex patterns for IOC extraction
 IP_PATTERN = re.compile(r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b')
 URL_PATTERN = re.compile(r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+')
-DOMAIN_PATTERN = re.compile(r'\b([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b')
+DOMAIN_PATTERN = re.compile(r'\b([a-zA-Z0-9.-]+\.(?:com|org|net|edu|gov|mil|int|io|co|us|uk|ru|cn|info|biz|me|tv|xyz|cloud|online|site|app|dev|sh|pw|top|ws|cc))\b', re.IGNORECASE)
 
 def extract_strings(file_path: str):
     if not os.path.exists(file_path):

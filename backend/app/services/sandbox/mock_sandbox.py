@@ -129,7 +129,10 @@ def _run_mock_blocking(job_id: str, local_path: str):
         elif jailed_path.endswith('.bat'):
             cmd = ["cmd.exe", "/c", jailed_path]
         elif jailed_path.endswith('.js'):
-            cmd = ["node", jailed_path]
+            wrapper_path = os.path.join(
+                os.path.dirname(__file__), "..", "runtime_analysis", "sandbox_wrapper.js"
+            )
+            cmd = ["node", wrapper_path, job_id, jailed_path]
         else:
             cmd = [jailed_path]
 
