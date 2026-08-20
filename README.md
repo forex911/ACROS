@@ -207,7 +207,7 @@ aegis-ai/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/forex911/Sentinel.git aegis
+git clone https://github.com/forex911/Aegis.git aegis
 cd aegis
 ```
 
