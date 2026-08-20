@@ -30,7 +30,7 @@ async def list_workspace_jobs(q: str = None, user=Depends(get_current_user)):
     
     # Isolation: only jobs submitted by or shared with current user (unless admin)
     is_admin = "admin" in user.get("roles", [])
-    base_query = {} if is_admin else {"$or": [{"extra.submitted_by": user["username"]}, {"shared_with": user["username"]}]}
+    base_query = {} if is_admin else {"$or": [{"submitted_by": user["username"]}, {"shared_with": user["username"]}]}
     
     query = base_query.copy()
     if q:

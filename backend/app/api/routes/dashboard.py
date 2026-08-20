@@ -25,7 +25,7 @@ async def get_dashboard_overview(timeframe: str = "1W", user=Depends(get_current
         date_filter = {"created_at": {"$gte": now - timedelta(days=90)}}
 
     is_admin = "admin" in user.get("roles", [])
-    base_query = {} if is_admin else {"$or": [{"extra.submitted_by": user["username"]}, {"shared_with": user["username"]}]}
+    base_query = {} if is_admin else {"$or": [{"submitted_by": user["username"]}, {"shared_with": user["username"]}]}
     
     query_active = {"status": {"$in": ["pending", "analyzing"]}}
     query_active.update(base_query)

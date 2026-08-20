@@ -159,7 +159,7 @@ async def profile(user=Depends(get_current_user)):
     # Scan statistics
     jobs_col = db["sandbox_jobs"]
     is_admin = "admin" in user_doc.get("roles", [])
-    base_query = {} if is_admin else {"$or": [{"extra.submitted_by": username}, {"shared_with": username}]}
+    base_query = {} if is_admin else {"$or": [{"submitted_by": username}, {"shared_with": username}]}
     
     total_scans = await jobs_col.count_documents(base_query)
     threats_found = await jobs_col.count_documents({"risk_score": {"$gte": 70}, **base_query})
@@ -217,7 +217,7 @@ async def share_job_route(job_id: str, payload: ShareRequest, user=Depends(get_c
         raise HTTPException(status_code=404, detail="Job not found")
     
     is_admin = "admin" in user.get("roles", [])
-    submitted_by = job.get("extra", {}).get("submitted_by")
+    submitted_by = job.get("submitted_by")
     if not is_admin and submitted_by != user["username"]:
         raise HTTPException(status_code=403, detail="Only the owner can share this job")
         
@@ -231,7 +231,7 @@ async def unshare_job_route(job_id: str, username: str, user=Depends(get_current
         raise HTTPException(status_code=404, detail="Job not found")
         
     is_admin = "admin" in user.get("roles", [])
-    submitted_by = job.get("extra", {}).get("submitted_by")
+    submitted_by = job.get("submitted_by")
     if not is_admin and submitted_by != user["username"]:
         raise HTTPException(status_code=403, detail="Only the owner can unshare this job")
         
@@ -243,7 +243,7 @@ async def get_my_jobs(user=Depends(get_current_user)):
     # Returns jobs explicitly submitted by this user for the sharing management UI
     from app.database.mongodb import db
     jobs_col = db["sandbox_jobs"]
-    cursor = jobs_col.find({"extra.submitted_by": user["username"]}, {"_id": 0, "job_id": 1, "filename": 1, "status": 1, "shared_with": 1, "created_at": 1}).sort("created_at", -1).limit(20)
+    cursor = jobs_col.find({"submitted_by": user["username"]}, {"_id": 0, "job_id": 1, "filename": 1, "status": 1, "shared_with": 1, "created_at": 1}).sort("created_at", -1).limit(20)
     jobs = await cursor.to_list(length=20)
     return jobs
 
