@@ -91,7 +91,7 @@ export const Login: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      setSuccess('Account created \u2014 signing you in...');
+      setSuccess('Account created — signing you in...');
 
       // Auto-login after registration
       const res = await axios.post(API_URL + '/auth/login', { username, password }, {
@@ -202,7 +202,7 @@ export const Login: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-[#000000] border border-[#333333] pl-12 pr-4 py-3.5 text-sm font-mono text-[#ffffff] placeholder:text-[#444444] focus:border-[#ffffff] transition-colors"
-                placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                placeholder="••••••••"
                 required
               />
             </div>
@@ -218,7 +218,7 @@ export const Login: React.FC = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="w-full bg-[#000000] border border-[#333333] pl-12 pr-4 py-3.5 text-sm font-mono text-[#ffffff] placeholder:text-[#444444] focus:border-[#ffffff] transition-colors"
-                  placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                  placeholder="••••••••"
                   required
                 />
               </div>
@@ -254,7 +254,7 @@ export const Login: React.FC = () => {
             type="button"
             className="mt-2 text-xs font-mono font-bold text-[#ffffff] uppercase tracking-widest hover:text-[#888888] transition-colors"
           >
-            {isSignUp ? '\u2190 SIGN IN' : 'SIGN UP \u2192'}
+            {isSignUp ? '← SIGN IN' : 'SIGN UP →'}
           </button>
         </div>
 
