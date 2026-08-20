@@ -47,7 +47,7 @@ CORE_API = k8s_client.CoreV1Api()
 # ---------------------------------------------------------------------------
 SANDBOX_NAMESPACE = "acros-sandbox"
 SANDBOX_RUNTIME_CLASS = "gvisor"
-DEFAULT_IMAGE = "ghcr.io/acros-ai/sandbox-runner:latest"
+DEFAULT_IMAGE = "ghcr.io/acros/sandbox-runner:latest"
 JOB_TTL_SECONDS = 300          # auto-delete completed Jobs after 5 min
 ACTIVE_DEADLINE_SECONDS = 120  # hard timeout for any sandbox execution
 BACKOFF_LIMIT = 0              # no retries — malware either runs or fails
@@ -211,7 +211,7 @@ def create_sandbox_job(
         metadata=k8s_client.V1ObjectMeta(
             labels={
                 "app": "acros-sandbox",
-                "acros-ai/job-id": job_id[:63],
+                "acros/job-id": job_id[:63],
             },
             annotations={
                 "container.apparmor.security.beta.kubernetes.io/sandbox-exec": "runtime/default",
@@ -236,7 +236,7 @@ def create_sandbox_job(
             namespace=SANDBOX_NAMESPACE,
             labels={
                 "app": "acros-sandbox",
-                "acros-ai/job-id": job_id[:63],
+                "acros/job-id": job_id[:63],
             },
         ),
         spec=job_spec,

@@ -1,8 +1,8 @@
 # REST API Reference
 
-This document provides the complete reference for all HTTP endpoints exposed by the ACROS-AI FastAPI backend.
+This document provides the complete reference for all HTTP endpoints exposed by the ACROS FastAPI backend.
 
-**Base URL**: `http://localhost:8000` (development) or `https://api.ACROS-AI.example.com` (production)
+**Base URL**: `http://localhost:8000` (development) or `https://api.ACROS.example.com` (production)
 
 ---
 

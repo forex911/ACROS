@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# ACROS AI — Build Script
+# ACROS — Build Script
 # Builds all Docker images and tags with latest + git commit SHA
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
@@ -11,7 +11,7 @@ GIT_SHA="$(git rev-parse --short HEAD 2>/dev/null || echo 'dev')"
 TAG="${BUILD_TAG:-latest}"
 
 echo "═══════════════════════════════════════════════════════════════"
-echo "  ACROS AI — Docker Build"
+echo "  ACROS — Docker Build"
 echo "  Registry: ${REGISTRY}"
 echo "  Tag:      ${TAG} + ${GIT_SHA}"
 echo "═══════════════════════════════════════════════════════════════"

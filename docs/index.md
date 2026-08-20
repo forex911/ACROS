@@ -1,10 +1,10 @@
-# ACROS-AI Documentation
+# ACROS Documentation
 
 > **Version**: 2.0 &nbsp;|&nbsp; **License**: Proprietary &nbsp;|&nbsp; **Status**: Active Development
 
-ACROS-AI is an intelligence-driven malware analysis platform that combines static analysis, dynamic sandbox execution, behavioral correlation, and AI-powered threat classification to produce enterprise-grade security verdicts.
+ACROS is an intelligence-driven malware analysis platform that combines static analysis, dynamic sandbox execution, behavioral correlation, and AI-powered threat classification to produce enterprise-grade security verdicts.
 
-Unlike conventional sandbox platforms that score individual events (e.g., `+10 for FILE_WRITE`), ACROS-AI employs a multi-stage Intelligence Layer that maps raw telemetry into attacker **capabilities**, sequences them into **behavior chains**, classifies the payload into a **threat family**, and computes a weighted **risk score** grounded in the MITRE ATT&CK framework.
+Unlike conventional sandbox platforms that score individual events (e.g., `+10 for FILE_WRITE`), ACROS employs a multi-stage Intelligence Layer that maps raw telemetry into attacker **capabilities**, sequences them into **behavior chains**, classifies the payload into a **threat family**, and computes a weighted **risk score** grounded in the MITRE ATT&CK framework.
 
 ---
 

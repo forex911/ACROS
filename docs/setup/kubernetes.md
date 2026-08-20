@@ -1,6 +1,6 @@
 # Enterprise Kubernetes Deployment
 
-ACROS-AI supports enterprise-grade deployment via Kubernetes and GitOps (ArgoCD).
+ACROS supports enterprise-grade deployment via Kubernetes and GitOps (ArgoCD).
 
 ## Helm Charts
 

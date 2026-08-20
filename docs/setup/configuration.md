@@ -1,6 +1,6 @@
 # Configuration Reference
 
-This document lists all environment variables used by ACROS-AI, organized by component.
+This document lists all environment variables used by ACROS, organized by component.
 
 ---
 

@@ -1,6 +1,6 @@
 # System Architecture Overview
 
-ACROS-AI is a distributed, cloud-native malware analysis and behavioral intelligence platform. It employs an event-driven architecture with isolated execution sandboxes, real-time telemetry extraction, and intelligence-driven threat classification.
+ACROS is a distributed, cloud-native malware analysis and behavioral intelligence platform. It employs an event-driven architecture with isolated execution sandboxes, real-time telemetry extraction, and intelligence-driven threat classification.
 
 ---
 

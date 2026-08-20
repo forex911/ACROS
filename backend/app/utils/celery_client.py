@@ -38,7 +38,7 @@ celery_app.conf.update(
 def enqueue_sandbox_job(
     job_id: str,
     presigned_url: str,
-    image: str = 'ghcr.io/acros-ai/sandbox-runner:latest',
+    image: str = 'ghcr.io/acros/sandbox-runner:latest',
     timeout: int = 120,
 ) -> object:
     """

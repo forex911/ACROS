@@ -1,6 +1,6 @@
 # Intelligence Layer
 
-The Intelligence Layer is the core analytical engine that distinguishes ACROS-AI from conventional sandbox platforms. Located in `backend/app/analysis/`, it replaces legacy single-event scoring (e.g., `score += 10` for every `FILE_WRITE`) with a multi-stage pipeline that models attacker intent, capability, and behavior natively.
+The Intelligence Layer is the core analytical engine that distinguishes ACROS from conventional sandbox platforms. Located in `backend/app/analysis/`, it replaces legacy single-event scoring (e.g., `score += 10` for every `FILE_WRITE`) with a multi-stage pipeline that models attacker intent, capability, and behavior natively.
 
 ---
 

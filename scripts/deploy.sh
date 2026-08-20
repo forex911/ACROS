@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# ACROS AI — Deploy Script
+# ACROS — Deploy Script
 # Pushes Docker images to Docker Hub and optionally applies K8s manifests
 # Usage: ./deploy.sh [--env staging|production] [--skip-push] [--skip-k8s]
 # ─────────────────────────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "═══════════════════════════════════════════════════════════════"
-echo "  ACROS AI — Deploy"
+echo "  ACROS — Deploy"
 echo "  Environment: ${ENVIRONMENT}"
 echo "  Registry:    ${REGISTRY}"
 echo "  Git SHA:     ${GIT_SHA}"

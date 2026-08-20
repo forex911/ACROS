@@ -1,6 +1,6 @@
 # Installation & Setup
 
-This guide covers deploying ACROS-AI for local development, Docker Compose, and production Kubernetes environments.
+This guide covers deploying ACROS for local development, Docker Compose, and production Kubernetes environments.
 
 ---
 
@@ -21,8 +21,8 @@ This guide covers deploying ACROS-AI for local development, Docker Compose, and 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/ACROS-AI.git
-cd ACROS-AI
+git clone https://github.com/your-org/ACROS.git
+cd ACROS
 ```
 
 ### 2. Backend Setup

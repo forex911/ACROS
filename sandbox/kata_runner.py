@@ -39,7 +39,7 @@ async def run_kata(job_id: str, local_path: str):
                     containers=[
                         client.V1Container(
                             name="sandbox-worker",
-                            image="acros-ai-worker:latest",
+                            image="acros-worker:latest",
                             command=["python", "executor.py"],
                             security_context=client.V1SecurityContext(
                                 privileged=False,

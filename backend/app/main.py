@@ -38,7 +38,7 @@ trace.set_tracer_provider(TracerProvider())
 # trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 
 app = FastAPI(
-    title="ACROS AI",
+    title="ACROS",
     version="1.0.0"
 )
 
@@ -165,7 +165,7 @@ app.include_router(threats_router)
 @app.get("/")
 async def root():
     return {
-        "message": "ACROS AI Backend Running"
+        "message": "ACROS Backend Running"
     }
 
 @app.get("/health")

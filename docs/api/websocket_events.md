@@ -1,6 +1,6 @@
 # WebSocket Events Reference
 
-ACROS-AI streams live sandbox telemetry to connected clients via WebSockets, enabling SOC analysts to watch malware execute in real-time directly from the dashboard.
+ACROS streams live sandbox telemetry to connected clients via WebSockets, enabling SOC analysts to watch malware execute in real-time directly from the dashboard.
 
 ---
 

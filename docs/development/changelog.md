@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to ACROS-AI are documented in this file. The format follows [Keep a Changelog](https://keepachangelog.com/).
+All notable changes to ACROS are documented in this file. The format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 

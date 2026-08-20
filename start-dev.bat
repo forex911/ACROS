@@ -1,9 +1,9 @@
 @echo off
-title ACROS-AI Dev Launcher
+title ACROS Dev Launcher
 
 echo.
 echo  =========================================
-echo    ACROS-AI - Starting Dev Environment
+echo    ACROS - Starting Dev Environment
 echo  =========================================
 echo.
 

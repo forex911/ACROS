@@ -1,6 +1,6 @@
 # Data Schema Reference
 
-This document defines the core data structures used throughout ACROS-AI for telemetry events, Indicators of Compromise (IOCs), Intelligence Layer output models, and the MongoDB document schema.
+This document defines the core data structures used throughout ACROS for telemetry events, Indicators of Compromise (IOCs), Intelligence Layer output models, and the MongoDB document schema.
 
 ---
 

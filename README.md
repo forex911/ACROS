@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">🛡️ ACROS-AI</h1>
+  <h1 align="center">🛡️ ACROS</h1>
   <p align="center">
     <strong>AI-Powered Malware Analysis &amp; Behavioral Intelligence Platform</strong>
   </p>
@@ -15,7 +15,7 @@
 
 ---
 
-ACROS-AI is a cloud-native, distributed malware analysis platform that combines **sandboxed execution**, **real-time behavioral telemetry**, and **machine learning threat classification** to deliver automated, explainable threat intelligence reports — complete with **MITRE ATT&CK mapping**, **IOC extraction**, and **YARA rule matching**.
+ACROS is a cloud-native, distributed malware analysis platform that combines **sandboxed execution**, **real-time behavioral telemetry**, and **machine learning threat classification** to deliver automated, explainable threat intelligence reports — complete with **MITRE ATT&CK mapping**, **IOC extraction**, and **YARA rule matching**.
 
 ---
 
@@ -54,7 +54,7 @@ ACROS-AI is a cloud-native, distributed malware analysis platform that combines 
 
 ## 🏗️ Architecture
 
-![ACROS Architecture](acros_architecture.png)
+![ACROS Architecture](docs/assets/acros_architecture.png)
 
 
 
@@ -110,7 +110,7 @@ ACROS-AI is a cloud-native, distributed malware analysis platform that combines 
 ## 📁 Project Structure
 
 ```
-acros-ai/
+acros/
 ├── backend/                    # FastAPI backend server
 │   ├── app/
 │   │   ├── api/routes/         # REST & WebSocket endpoints
@@ -295,7 +295,7 @@ Individual service Dockerfiles are available in `deployment/docker/`.
 Helm charts are in `charts/acros-platform/`. Deploy with:
 
 ```bash
-helm install acros-ai charts/acros-platform/ -n acros --create-namespace
+helm install acros charts/acros-platform/ -n acros --create-namespace
 ```
 
 ### GitOps (Argo CD)

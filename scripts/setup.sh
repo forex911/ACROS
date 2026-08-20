@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# ACROS AI — First-Time Setup Script
+# ACROS — First-Time Setup Script
 # Installs Python/Node dependencies, creates .env, and initializes services
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
@@ -8,7 +8,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "═══════════════════════════════════════════════════════════════"
-echo "  ACROS AI — First-Time Setup"
+echo "  ACROS — First-Time Setup"
 echo "═══════════════════════════════════════════════════════════════"
 
 # ── Check prerequisites ─────────────────────────────────────────────────────
@@ -80,7 +80,7 @@ cd "${REPO_ROOT}"
 if [ ! -f ".env" ]; then
     cat > .env << 'EOF'
 # ─────────────────────────────────────────────────────────────────
-# ACROS AI — Environment Configuration
+# ACROS — Environment Configuration
 # ─────────────────────────────────────────────────────────────────
 
 # Backend

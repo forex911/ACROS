@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# ACROS AI — Clean Script
+# ACROS — Clean Script
 # Removes Docker volumes, dangling images, temp files, and caches
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
@@ -8,7 +8,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "═══════════════════════════════════════════════════════════════"
-echo "  ACROS AI — Cleanup"
+echo "  ACROS — Cleanup"
 echo "═══════════════════════════════════════════════════════════════"
 
 # ── Python caches ───────────────────────────────────────────────────────────

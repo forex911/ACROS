@@ -40,7 +40,7 @@ spec:
       
       containers:
       - name: worker
-        image: ghcr.io/acros-ai/worker:latest
+        image: ghcr.io/acros/worker:latest
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true

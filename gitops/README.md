@@ -1,4 +1,4 @@
-GitOps layout for ACROS AI
+GitOps layout for ACROS
 
 Structure:
 
