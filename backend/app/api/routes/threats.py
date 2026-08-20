@@ -102,6 +102,48 @@ TACTIC_ORDER = [
 ]
 
 
+
+TECHNIQUE_DESCRIPTIONS = {
+    # Execution
+    "T1059": "Adversaries may abuse command and script interpreters to execute commands, scripts, or binaries. These interfaces and languages provide ways of interacting with computer systems and are a common feature across many different platforms.",
+    "T1059.001": "Adversaries may abuse PowerShell commands and scripts for execution. PowerShell is a powerful interactive command-line interface and scripting environment included in the Windows operating system.",
+    "T1204": "Adversaries may rely upon specific actions by a user in order to gain execution. Users may be subjected to social engineering to get them to execute malicious payloads by clicking links or opening attachments.",
+    "T1047": "Adversaries may abuse Windows Management Instrumentation (WMI) to execute malicious commands and payloads. WMI is an administration feature that provides a uniform environment to access Windows system components.",
+    
+    # Defense Evasion
+    "T1027": "Adversaries may obfuscate content or information to impede analysis or prevent detection. This can include hiding payloads in legitimate files or using encryption/encoding.",
+    "T1027.010": "Adversaries may use command obfuscation to hide malicious commands from defenders and security products. This often involves string manipulation, base64 encoding, or variable substitution.",
+    "T1140": "Adversaries may use Obfuscated Files or Information to hide artifacts of an intrusion from analysis. They may require mechanisms to deobfuscate/decode files or information to use them during their operations.",
+    "T1036": "Adversaries may masquerade as legitimate programs or files. Masquerading occurs when the name or location of an executable, legitimate or malicious, is manipulated to evade defenses.",
+    "T1070": "Adversaries may clear or remove evidence of their presence or actions. This can include deleting logs, command history, or specific files to evade detection.",
+    
+    # Command and Control
+    "T1071": "Adversaries may communicate using application layer protocols to avoid detection/network filtering by blending in with existing traffic (e.g. HTTP, HTTPS, DNS).",
+    "T1105": "Adversaries may transfer tools or other files from an external system into a compromised environment. Files may be copied from an external adversary-controlled system to the victim network.",
+    "T1090": "Adversaries may use a connection proxy to direct network traffic between systems or act as an intermediary for network communications to a command and control server to avoid direct connections.",
+    
+    # Discovery
+    "T1082": "Adversaries may attempt to get detailed information about the operating system and hardware, including version, patches, architecture, and network configuration.",
+    "T1083": "Adversaries may enumerate files and directories or search in specific locations of a host or network share for certain information.",
+    "T1057": "Adversaries may attempt to get information about running processes on a system to identify defensive capabilities or other potential targets.",
+    
+    # Persistence / Privilege Escalation
+    "T1547": "Adversaries may achieve persistence by adding a program to a startup folder or referencing it with a Registry run key to execute when a user logs in.",
+    "T1068": "Adversaries may exploit software vulnerabilities in an attempt to elevate privileges. Exploitation of a software vulnerability occurs when an adversary takes advantage of a programming error in a program.",
+    
+    # Impact
+    "T1486": "Adversaries may encrypt data on target systems or on large numbers of systems in a network to interrupt availability to system and network resources.",
+    "T1490": "Adversaries may inhibit access to data by modifying or deleting backups, shadow copies, or other recovery mechanisms."
+}
+
+def _get_description(tech_id: str, name: str) -> str:
+    if tech_id in TECHNIQUE_DESCRIPTIONS:
+        return TECHNIQUE_DESCRIPTIONS[tech_id]
+    base_id = tech_id.split(".")[0]
+    if base_id in TECHNIQUE_DESCRIPTIONS:
+        return TECHNIQUE_DESCRIPTIONS[base_id]
+    return f"{name} is a tactic used by adversaries to achieve their objectives during a cyber attack."
+
 def _resolve_tactic(technique_id: str) -> str:
     """Resolve a technique ID to its tactic using prefix matching."""
     # Try exact match first (e.g. T1059)
@@ -163,6 +205,7 @@ async def get_attack_matrix(user=Depends(get_current_user)):
         grouped[tactic_name]["techniques"].append({
             "id": technique_id,
             "name": r["name"],
+            "description": _get_description(technique_id, r["name"]),
             "active": True,
             "frequency": r["frequency"]
         })

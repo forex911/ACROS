@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Activity, ShieldAlert } from 'lucide-react';
+import { Activity, ShieldAlert, X, Info } from 'lucide-react';
 import api from '../../api/client';
 
 interface Tactic {
@@ -19,6 +19,8 @@ interface Technique {
 }
 
 export const AttackMatrix: React.FC = () => {
+
+  const [selectedTechnique, setSelectedTechnique] = useState<Technique | null>(null);
   const { data: tactics = [], isLoading, error } = useQuery({
     queryKey: ['attackMatrix'],
     queryFn: async () => {
@@ -34,6 +36,60 @@ export const AttackMatrix: React.FC = () => {
   
   return (
     <div className="w-max bg-[#000000] p-4" data-lenis-prevent>
+      {/* Technique Detail Modal */}
+      {selectedTechnique && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#0a0a0a] border border-[#333333] w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-[#222222] bg-[#111111]">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 border border-red-500 bg-red-500/10 flex items-center justify-center">
+                  <ShieldAlert className="w-5 h-5 text-red-500" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <span className="text-[10px] font-mono font-bold bg-red-500 text-black px-2 py-0.5 uppercase tracking-widest">{selectedTechnique.id}</span>
+                    <span className="text-[10px] font-mono font-bold text-red-500 uppercase tracking-widest flex items-center gap-1">
+                      <Activity size={12} /> ACTIVE THREAT
+                    </span>
+                  </div>
+                  <h2 className="text-xl font-heading font-black text-white uppercase tracking-tighter">{selectedTechnique.name}</h2>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedTechnique(null)}
+                className="p-2 text-[#666666] hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            {/* Body */}
+            <div className="p-8 space-y-8">
+              <div>
+                <h3 className="text-[10px] font-mono font-bold text-[#666666] uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                  <Info size={12} /> Threat Overview
+                </h3>
+                <p className="text-sm font-sans text-[#cccccc] leading-relaxed">
+                  {selectedTechnique.description || "No detailed description available for this specific technique. It involves adversarial behavior mapped to the MITRE ATT&CK framework."}
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="border border-[#222222] p-4 bg-[#050505]">
+                    <span className="block text-[10px] font-mono font-bold text-[#666666] uppercase tracking-[0.2em] mb-1">Observed Frequency</span>
+                    <span className="text-2xl font-heading font-black text-white">{selectedTechnique.frequency || 1}x</span>
+                 </div>
+                 <div className="border border-[#222222] p-4 bg-[#050505]">
+                    <span className="block text-[10px] font-mono font-bold text-[#666666] uppercase tracking-[0.2em] mb-1">Status</span>
+                    <span className="text-lg font-heading font-black text-red-500">DETECTED</span>
+                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-8 min-w-max">
         {tactics.map((tactic: Tactic) => (
           <div key={tactic.id} className="w-[300px] flex-shrink-0">
@@ -53,8 +109,9 @@ export const AttackMatrix: React.FC = () => {
               {tactic.techniques.map((technique) => (
                 <div 
                   key={technique.id} 
+                  onClick={() => setSelectedTechnique(technique)}
                   className={`
-                    p-4 border transition-colors duration-200
+                    cursor-pointer p-4 border transition-colors duration-200
                     ${technique.active 
                       ? 'bg-red-500/10 border-red-500' 
                       : 'bg-[#000000] border-[#333333] hover:border-[#666666]'
