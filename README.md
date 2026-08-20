@@ -54,7 +54,7 @@ ACROS-AI is a cloud-native, distributed malware analysis platform that combines 
 
 ## 🏗️ Architecture
 
-![ACROS Architecture](aegis_architecture.png)
+![ACROS Architecture](acros_architecture.png)
 
 
 
