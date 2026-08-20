@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    image: acros-backend
     container_name: acros-backend
     ports:
       - "8000:8000"
@@ -11,8 +12,8 @@ services:
       - ./ai_engine:/sandbox/ai_engine  # Mount AI engine for LLM inference
       - ./monitor:/sandbox/monitor      # Mount Monitor modules for telemetry enrichment
       - ./sandbox:/sandbox/sandbox      # Mount Sandbox definitions
-      - backend_uploads:/tmp/aegis_uploads
-      - backend_reports:/tmp/aegis_reports
+      - backend_uploads:/tmp/acros_uploads
+      - backend_reports:/tmp/acros_reports
     environment:
       - MONGO_URI=mongodb://mongodb:27017
       - DATABASE_NAME=sentinel_ai
