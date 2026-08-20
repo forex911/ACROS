@@ -60,7 +60,7 @@ def _hex_to_ip(hex_ip: str) -> str:
         ip_bytes = struct.pack("<I", ip_int)
         return socket.inet_ntoa(ip_bytes)
     except (ValueError, struct.error, OSError):
-        return "0.0.0.0"
+        return "0.0.0.0"  # nosec B104
 
 
 def _hex_to_port(hex_port: str) -> int:
@@ -131,7 +131,7 @@ class ConnectionLogger:
                 local_port = _hex_to_port(local_port_hex)
 
                 # Skip listening sockets and zero addresses
-                if dest_ip == "0.0.0.0" or dest_port == 0:
+                if dest_ip == "0.0.0.0" or dest_port == 0:  # nosec B104
                     continue
 
                 # Dedup key

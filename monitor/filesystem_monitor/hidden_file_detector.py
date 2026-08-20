@@ -14,7 +14,7 @@ logger = logging.getLogger("hidden_file_detector")
 
 # ── Suspicious paths that indicate malicious file drops ─────────────────────
 SUSPICIOUS_PATHS_LINUX = [
-    "/tmp", "/var/tmp", "/dev/shm",
+    "/tmp", "/var/tmp", "/dev/shm",  # nosec B108
     "/etc/cron.d", "/etc/cron.daily", "/etc/cron.hourly",
     "/etc/init.d", "/etc/systemd/system",
     "/usr/lib/systemd/system",
