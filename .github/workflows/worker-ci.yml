@@ -51,8 +51,8 @@ jobs:
           context: ./services/sandbox-worker
           file: ./services/sandbox-worker/Dockerfile
           push: true
-          tags: ${{ secrets.REGISTRY_HOST }}/sentinel/sandbox-worker:${{ github.sha }}
+          tags: ${{ secrets.REGISTRY_HOST }}/acros/sandbox-worker:${{ github.sha }}
       - name: Trivy Scan
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ secrets.REGISTRY_HOST }}/sentinel/sandbox-worker:${{ github.sha }}
+          image-ref: ${{ secrets.REGISTRY_HOST }}/acros/sandbox-worker:${{ github.sha }}
