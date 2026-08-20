@@ -8,7 +8,9 @@ router = APIRouter()
 @router.get("/analysis/{file_id}")
 async def get_analysis(file_id: str, user=Depends(get_current_user)):
     if file_id == "latest":
-        job = await db["sandbox_jobs"].find_one(sort=[("created_at", -1)])
+        is_admin = "admin" in user.get("roles", [])
+        base_query = {} if is_admin else {"$or": [{"extra.submitted_by": user["username"]}, {"shared_with": user["username"]}]}
+        job = await db["sandbox_jobs"].find_one(base_query, sort=[("created_at", -1)])
         if not job:
             # Return a placeholder if the DB is completely empty
             return {
@@ -23,6 +25,13 @@ async def get_analysis(file_id: str, user=Depends(get_current_user)):
             }
     else:
         job = await db["sandbox_jobs"].find_one({"job_id": file_id})
+        
+    if job:
+        is_admin = "admin" in user.get("roles", [])
+        submitted_by = job.get("extra", {}).get("submitted_by")
+        shared_with = job.get("shared_with", [])
+        if not is_admin and submitted_by != user["username"] and user["username"] not in shared_with:
+            raise HTTPException(status_code=403, detail="Not authorized to view this analysis")
         
     if not job:
         raise HTTPException(status_code=404, detail="Analysis not found")
@@ -52,7 +61,13 @@ async def get_analysis(file_id: str, user=Depends(get_current_user)):
 
 @router.get("/analysis/{file_id}/telemetry")
 async def get_analysis_telemetry(file_id: str, user=Depends(get_current_user)):
-    job = await db["sandbox_jobs"].find_one({"job_id": file_id}, {"telemetry": 1})
+    job = await db["sandbox_jobs"].find_one({"job_id": file_id}, {"telemetry": 1, "extra": 1, "shared_with": 1})
+    if job:
+        is_admin = "admin" in user.get("roles", [])
+        submitted_by = job.get("extra", {}).get("submitted_by")
+        shared_with = job.get("shared_with", [])
+        if not is_admin and submitted_by != user["username"] and user["username"] not in shared_with:
+            raise HTTPException(status_code=403, detail="Not authorized")
     if not job:
         raise HTTPException(status_code=404, detail="Analysis not found")
         
@@ -62,7 +77,13 @@ async def get_analysis_telemetry(file_id: str, user=Depends(get_current_user)):
 
 @router.get("/analysis/{file_id}/artifacts")
 async def get_analysis_artifacts(file_id: str, user=Depends(get_current_user)):
-    job = await db["sandbox_jobs"].find_one({"job_id": file_id}, {"artifacts": 1})
+    job = await db["sandbox_jobs"].find_one({"job_id": file_id}, {"artifacts": 1, "extra": 1, "shared_with": 1})
+    if job:
+        is_admin = "admin" in user.get("roles", [])
+        submitted_by = job.get("extra", {}).get("submitted_by")
+        shared_with = job.get("shared_with", [])
+        if not is_admin and submitted_by != user["username"] and user["username"] not in shared_with:
+            raise HTTPException(status_code=403, detail="Not authorized")
     if not job:
         raise HTTPException(status_code=404, detail="Analysis not found")
         

@@ -24,9 +24,16 @@ async def get_dashboard_overview(timeframe: str = "1W", user=Depends(get_current
     elif timeframe == "3M":
         date_filter = {"created_at": {"$gte": now - timedelta(days=90)}}
 
+    is_admin = "admin" in user.get("roles", [])
+    base_query = {} if is_admin else {"$or": [{"extra.submitted_by": user["username"]}, {"shared_with": user["username"]}]}
+    
     query_active = {"status": {"$in": ["pending", "analyzing"]}}
+    query_active.update(base_query)
+    
     query_threats = {"risk_score": {"$gte": 70}}
-    query_all = {}
+    query_threats.update(base_query)
+    
+    query_all = base_query.copy()
 
     if date_filter:
         query_active.update(date_filter)
@@ -113,6 +120,7 @@ async def get_dashboard_overview(timeframe: str = "1W", user=Depends(get_current
             dt = now - timedelta(hours=i)
             time_label = dt.strftime("%H:00")
             chart_data.append({
+                "timestamp": dt.isoformat() + "Z",
                 "time": time_label,
                 "detections": threats_by_time.get(time_label, 0),
                 "scans": scans_by_time.get(time_label, 0)
@@ -123,6 +131,7 @@ async def get_dashboard_overview(timeframe: str = "1W", user=Depends(get_current
             dt = now - timedelta(days=i)
             time_label = dt.strftime("%Y-%m-%d")
             chart_data.append({
+                "timestamp": dt.isoformat() + "Z",
                 "time": time_label,
                 "detections": threats_by_time.get(time_label, 0),
                 "scans": scans_by_time.get(time_label, 0)
@@ -133,6 +142,7 @@ async def get_dashboard_overview(timeframe: str = "1W", user=Depends(get_current
             dt = now - timedelta(days=i)
             time_label = dt.strftime("%Y-%m-%d")
             chart_data.append({
+                "timestamp": dt.isoformat() + "Z",
                 "time": time_label,
                 "detections": threats_by_time.get(time_label, 0),
                 "scans": scans_by_time.get(time_label, 0)
@@ -150,6 +160,7 @@ async def get_dashboard_overview(timeframe: str = "1W", user=Depends(get_current
             week_threats = sum(count for date, count in threats_by_time.items() if dt_start.strftime("%Y-%m-%d") <= date <= dt_end.strftime("%Y-%m-%d"))
             
             chart_data.append({
+                "timestamp": dt_end.isoformat() + "Z",
                 "time": time_label,
                 "detections": week_threats,
                 "scans": week_scans

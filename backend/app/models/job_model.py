@@ -58,6 +58,7 @@ async def create_job(job_id: str, filename: str, path: str, sha256: str, md5: st
         "telemetry": [],
         "iocs": [],
         "mitre_tactics": [],
+        "shared_with": [],
         "analysis": {},
         "retry_count": 0,
         "max_retries": 3,
@@ -149,3 +150,9 @@ async def get_logs(job_id: str):
 async def get_metrics(job_id: str):
     doc = await jobs.find_one({"job_id": job_id}, projection={"_id": False, "metrics": True})
     return doc.get("metrics") if doc else {}
+
+async def share_job(job_id: str, username: str):
+    await jobs.update_one({"job_id": job_id}, {"$addToSet": {"shared_with": username}, "$set": {"updated_at": datetime.utcnow()}})
+
+async def unshare_job(job_id: str, username: str):
+    await jobs.update_one({"job_id": job_id}, {"$pull": {"shared_with": username}, "$set": {"updated_at": datetime.utcnow()}})

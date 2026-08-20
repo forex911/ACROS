@@ -158,10 +158,13 @@ async def profile(user=Depends(get_current_user)):
 
     # Scan statistics
     jobs_col = db["sandbox_jobs"]
-    total_scans = await jobs_col.count_documents({})
-    threats_found = await jobs_col.count_documents({"risk_score": {"$gte": 70}})
-    completed_scans = await jobs_col.count_documents({"status": "completed"})
-    pending_scans = await jobs_col.count_documents({"status": {"$in": ["pending", "analyzing"]}})
+    is_admin = "admin" in user_doc.get("roles", [])
+    base_query = {} if is_admin else {"$or": [{"extra.submitted_by": username}, {"shared_with": username}]}
+    
+    total_scans = await jobs_col.count_documents(base_query)
+    threats_found = await jobs_col.count_documents({"risk_score": {"$gte": 70}, **base_query})
+    completed_scans = await jobs_col.count_documents({"status": "completed", **base_query})
+    pending_scans = await jobs_col.count_documents({"status": {"$in": ["pending", "analyzing"]}, **base_query})
 
     # API Keys (redacted)
     api_keys = []
@@ -200,3 +203,47 @@ async def create_api_key(user=Depends(require_roles([Role.ADMIN]))):
 async def delete_api_key(key: str, user=Depends(require_roles([Role.ADMIN]))):
     await revoke_api_key(user['username'], key)
     return {"status": "ok"}
+
+from app.models.job_model import share_job, unshare_job, get_job
+from pydantic import BaseModel
+
+class ShareRequest(BaseModel):
+    username: str
+
+@router.post('/auth/jobs/{job_id}/share', status_code=200)
+async def share_job_route(job_id: str, payload: ShareRequest, user=Depends(get_current_user)):
+    job = await get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    is_admin = "admin" in user.get("roles", [])
+    submitted_by = job.get("extra", {}).get("submitted_by")
+    if not is_admin and submitted_by != user["username"]:
+        raise HTTPException(status_code=403, detail="Only the owner can share this job")
+        
+    await share_job(job_id, payload.username)
+    return {"status": "shared"}
+
+@router.delete('/auth/jobs/{job_id}/share/{username}', status_code=204)
+async def unshare_job_route(job_id: str, username: str, user=Depends(get_current_user)):
+    job = await get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
+    is_admin = "admin" in user.get("roles", [])
+    submitted_by = job.get("extra", {}).get("submitted_by")
+    if not is_admin and submitted_by != user["username"]:
+        raise HTTPException(status_code=403, detail="Only the owner can unshare this job")
+        
+    await unshare_job(job_id, username)
+    return {"status": "unshared"}
+
+@router.get('/auth/jobs/mine')
+async def get_my_jobs(user=Depends(get_current_user)):
+    # Returns jobs explicitly submitted by this user for the sharing management UI
+    from app.database.mongodb import db
+    jobs_col = db["sandbox_jobs"]
+    cursor = jobs_col.find({"extra.submitted_by": user["username"]}, {"_id": 0, "job_id": 1, "filename": 1, "status": 1, "shared_with": 1, "created_at": 1}).sort("created_at", -1).limit(20)
+    jobs = await cursor.to_list(length=20)
+    return jobs
+

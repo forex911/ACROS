@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { X, Shield, ShieldAlert, Cpu, CheckCircle, Key, Clock, User, Copy, ChevronRight, LogOut } from 'lucide-react';
+import { X, Shield, ShieldAlert, Cpu, CheckCircle, Key, Clock, User, Copy, ChevronRight, LogOut, Share2 } from 'lucide-react';
 import api from '../api/client';
 
 interface ProfilePanelProps {
@@ -20,6 +20,31 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({ isOpen, onClose, onL
     },
     enabled: isOpen,
   });
+
+  
+  const { data: myJobs, refetch: refetchJobs } = useQuery({
+    queryKey: ['myJobs'],
+    queryFn: async () => {
+      const res = await api.get('/auth/jobs/mine');
+      return res.data;
+    },
+    enabled: isOpen,
+  });
+
+  const [shareInput, setShareInput] = useState<{ [key: string]: string }>({});
+  
+  const handleShare = async (jobId: string) => {
+    const username = shareInput[jobId];
+    if (!username) return;
+    try {
+      await api.post(`/auth/jobs/${jobId}/share`, { username });
+      setShareInput(prev => ({ ...prev, [jobId]: '' }));
+      refetchJobs();
+    } catch (e) {
+      console.error('Share failed', e);
+      alert('Failed to share job. Check username or permissions.');
+    }
+  };
 
   // Close on outside click
   useEffect(() => {
@@ -142,6 +167,57 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({ isOpen, onClose, onL
                   <InfoRow label="Role" value={roles.join(', ')} />
                   <InfoRow label="Member For" value={accountAge} />
                   <InfoRow label="Created" value={createdAt ? new Date(createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'} />
+                </div>
+              </div>
+
+              
+              {/* My Scans & Sharing */}
+              <div>
+                <h3 className="text-[10px] font-mono font-bold text-[#666666] uppercase tracking-[0.2em] mb-4">My Scans & Sharing</h3>
+                <div className="border border-[#222222] divide-y divide-[#222222] bg-[#080808]">
+                  {(!myJobs || myJobs.length === 0) ? (
+                    <div className="px-4 py-6 text-center text-xs font-mono text-[#666666]">No scans found</div>
+                  ) : (
+                    myJobs.map((job: any) => (
+                      <div key={job.job_id} className="p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="min-w-0">
+                            <div className="text-xs font-mono text-[#ffffff] font-bold truncate">{job.filename}</div>
+                            <div className="text-[10px] font-mono text-[#666666] mt-1">{new Date(job.created_at).toLocaleDateString()} &bull; {job.status}</div>
+                          </div>
+                        </div>
+                        
+                        {/* Shared With List */}
+                        {job.shared_with && job.shared_with.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {job.shared_with.map((u: string) => (
+                              <span key={u} className="text-[9px] font-mono bg-[#222222] text-[#aaaaaa] px-1.5 py-0.5 rounded-sm flex items-center gap-1">
+                                <User className="w-3 h-3" /> {u}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Share Input */}
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            placeholder="Username to share with..." 
+                            value={shareInput[job.job_id] || ''}
+                            onChange={(e) => setShareInput(prev => ({ ...prev, [job.job_id]: e.target.value }))}
+                            className="flex-1 bg-[#000000] border border-[#333333] px-3 py-1.5 text-xs font-mono text-[#ffffff] placeholder:text-[#444444] focus:border-[#ffffff] transition-colors"
+                          />
+                          <button 
+                            onClick={() => handleShare(job.job_id)}
+                            disabled={!shareInput[job.job_id]}
+                            className="bg-[#222222] hover:bg-[#333333] text-[#ffffff] px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest disabled:opacity-50 transition-colors flex items-center gap-2"
+                          >
+                            <Share2 className="w-3 h-3" /> Share
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 

@@ -28,13 +28,20 @@ async def list_workspace_jobs(q: str = None, user=Depends(get_current_user)):
     """
     jobs_collection = db["sandbox_jobs"]
     
-    query = {}
+    # Isolation: only jobs submitted by or shared with current user (unless admin)
+    is_admin = "admin" in user.get("roles", [])
+    base_query = {} if is_admin else {"$or": [{"extra.submitted_by": user["username"]}, {"shared_with": user["username"]}]}
+    
+    query = base_query.copy()
     if q:
         query = {
-            "$or": [
+            "$and": [
+                base_query,
+                {"$or": [
                 {"filename": {"$regex": q, "$options": "i"}},
                 {"job_id": {"$regex": q, "$options": "i"}},
                 {"sha256": {"$regex": q, "$options": "i"}}
+                ]}
             ]
         }
         
