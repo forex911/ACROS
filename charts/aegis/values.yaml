@@ -1,4 +1,4 @@
-# Default values for Aegis.
+# Default values for ACROS.
 
 replicaCount:
   backend: 2
@@ -9,14 +9,14 @@ replicaCount:
   minio: 1
 
 image:
-  backend: aegis/backend:latest
-  frontend: aegis/frontend:latest
+  backend: acros/backend:latest
+  frontend: acros/frontend:latest
   pullPolicy: IfNotPresent
 
 ingress:
   enabled: true
   className: "nginx"
-  host: Aegis.local
+  host: ACROS.local
 
 sandbox:
   runtimeClassName: gvisor

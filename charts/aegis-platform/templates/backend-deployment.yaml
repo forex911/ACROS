@@ -2,20 +2,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: aegis-backend
+  name: acros-backend
   labels:
-    app: aegis-backend
+    app: acros-backend
 spec:
   replicas: {{ .Values.replicaCount.backend }}
   selector:
     matchLabels:
-      app: aegis-backend
+      app: acros-backend
   template:
     metadata:
       labels:
-        app: aegis-backend
+        app: acros-backend
     spec:
-      serviceAccountName: aegis-backend-sa
+      serviceAccountName: acros-backend-sa
       containers:
         - name: backend
           image: "{{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}"
@@ -40,10 +40,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: aegis-backend
+  name: acros-backend
 spec:
   selector:
-    app: aegis-backend
+    app: acros-backend
   ports:
     - port: {{ .Values.service.backend.port }}
       targetPort: 8000

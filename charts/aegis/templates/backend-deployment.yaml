@@ -1,36 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: aegis-backend
-  namespace: aegis-backend
+  name: acros-backend
+  namespace: acros-backend
   labels:
-    app: aegis-backend
+    app: acros-backend
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: aegis-backend
+      app: acros-backend
   template:
     metadata:
       labels:
-        app: aegis-backend
+        app: acros-backend
     spec:
-      serviceAccountName: aegis-backend-sa
+      serviceAccountName: acros-backend-sa
       securityContext:
         runAsNonRoot: true
         runAsUser: 1001
         fsGroup: 1001
       containers:
         - name: backend
-          image: aegis/backend:latest
+          image: acros/backend:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
           envFrom:
             - secretRef:
-                name: aegis-backend-secrets
+                name: acros-backend-secrets
             - configMapRef:
-                name: aegis-backend-config
+                name: acros-backend-config
           resources:
             requests:
               cpu: "200m"
@@ -58,11 +58,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: aegis-backend
-  namespace: aegis-backend
+  name: acros-backend
+  namespace: acros-backend
 spec:
   selector:
-    app: aegis-backend
+    app: acros-backend
   ports:
     - protocol: TCP
       port: 80
@@ -73,8 +73,8 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: aegis-backend-config
-  namespace: aegis-backend
+  name: acros-backend-config
+  namespace: acros-backend
 data:
   UPLOAD_DIR: "/tmp/uploads"
   LOG_LEVEL: "INFO"
@@ -83,15 +83,15 @@ data:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: aegis-backend-secrets
-  namespace: aegis-backend
+  name: acros-backend-secrets
+  namespace: acros-backend
 type: Opaque
 stringData:
   # Replace values with secrets (do not commit real credentials)
-  MONGO_URI: "mongodb://mongo-0.mongo-svc.aegis-storage.svc.cluster.local:27017"
-  REDIS_URL: "redis://redis.aegis-storage.svc.cluster.local:6379/0"
-  CELERY_BROKER_URL: "redis://redis.aegis-storage.svc.cluster.local:6379/0"
-  S3_ENDPOINT: "http://minio.aegis-storage:9000"
+  MONGO_URI: "mongodb://mongo-0.mongo-svc.acros-storage.svc.cluster.local:27017"
+  REDIS_URL: "redis://redis.acros-storage.svc.cluster.local:6379/0"
+  CELERY_BROKER_URL: "redis://redis.acros-storage.svc.cluster.local:6379/0"
+  S3_ENDPOINT: "http://minio.acros-storage:9000"
   S3_ACCESS_KEY: "minio"
   S3_SECRET_KEY: "minio123"
   S3_BUCKET: "uploads"

@@ -1,0 +1,73 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# ACROS Sandbox — Local Development Docker Compose
+# ─────────────────────────────────────────────────────────────────────────────
+# Defines isolated sandbox container services for local testing.
+# Each sandbox type runs in its own container with restricted networking.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  sandbox-python:
+    build:
+      context: ../../
+      dockerfile: sandbox/docker/Dockerfile.python
+    container_name: acros-sandbox-python
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=100m
+    networks:
+      - sandbox-net
+    volumes:
+      - sandbox_artifacts:/tmp/aegis_sandbox
+    environment:
+      - AEGIS_SANDBOX=1
+
+  sandbox-node:
+    build:
+      context: ../../
+      dockerfile: sandbox/docker/Dockerfile.node
+    container_name: acros-sandbox-node
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=100m
+    networks:
+      - sandbox-net
+    environment:
+      - AEGIS_SANDBOX=1
+      - NODE_ENV=sandbox
+
+  sandbox-runner:
+    build:
+      context: ../../
+      dockerfile: sandbox/docker/Dockerfile.runner
+    container_name: acros-sandbox-runner
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SYS_PTRACE    # Required for eBPF/strace
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=100m
+    networks:
+      - sandbox-net
+    volumes:
+      - sandbox_artifacts:/tmp/aegis_sandbox
+    environment:
+      - AEGIS_SANDBOX=1
+
+networks:
+  sandbox-net:
+    driver: bridge
+    internal: true    # No external internet access for sandboxed containers
+
+volumes:
+  sandbox_artifacts:

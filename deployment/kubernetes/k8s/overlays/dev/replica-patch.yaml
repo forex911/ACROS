@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: aegis-backend
-  namespace: aegis-backend
+  name: acros-backend
+  namespace: acros-backend
 spec:
   replicas: 1

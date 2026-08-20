@@ -16,7 +16,7 @@ BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
 RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/1')
 
 celery_app = Celery(
-    'aegis',
+    'acros',
     broker=BROKER_URL,
     backend=RESULT_BACKEND,
 )
@@ -38,7 +38,7 @@ celery_app.conf.update(
 def enqueue_sandbox_job(
     job_id: str,
     presigned_url: str,
-    image: str = 'ghcr.io/aegis-ai/sandbox-runner:latest',
+    image: str = 'ghcr.io/acros-ai/sandbox-runner:latest',
     timeout: int = 120,
 ) -> object:
     """

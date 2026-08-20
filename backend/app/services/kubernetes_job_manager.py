@@ -45,9 +45,9 @@ CORE_API = k8s_client.CoreV1Api()
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-SANDBOX_NAMESPACE = "aegis-sandbox"
+SANDBOX_NAMESPACE = "acros-sandbox"
 SANDBOX_RUNTIME_CLASS = "gvisor"
-DEFAULT_IMAGE = "ghcr.io/aegis-ai/sandbox-runner:latest"
+DEFAULT_IMAGE = "ghcr.io/acros-ai/sandbox-runner:latest"
 JOB_TTL_SECONDS = 300          # auto-delete completed Jobs after 5 min
 ACTIVE_DEADLINE_SECONDS = 120  # hard timeout for any sandbox execution
 BACKOFF_LIMIT = 0              # no retries — malware either runs or fails
@@ -152,7 +152,7 @@ def create_sandbox_job(
             k8s_client.V1EnvVar(name="RESULT_BACKEND_URL",
                                 value_from=k8s_client.V1EnvVarSource(
                                     secret_key_ref=k8s_client.V1SecretKeySelector(
-                                        name="aegis-secrets",
+                                        name="acros-secrets",
                                         key="REDIS_URL",
                                     )
                                 )),
@@ -176,7 +176,7 @@ def create_sandbox_job(
         containers=[main_container],
         volumes=[artifact_volume, tmp_volume],
         security_context=pod_security,
-        service_account_name="aegis-sandbox-sa",
+        service_account_name="acros-sandbox-sa",
         automount_service_account_token=False,
         enable_service_links=False,
         dns_policy="Default",  # inherit cluster DNS for MinIO resolution
@@ -210,8 +210,8 @@ def create_sandbox_job(
     pod_template = k8s_client.V1PodTemplateSpec(
         metadata=k8s_client.V1ObjectMeta(
             labels={
-                "app": "aegis-sandbox",
-                "aegis-ai/job-id": job_id[:63],
+                "app": "acros-sandbox",
+                "acros-ai/job-id": job_id[:63],
             },
             annotations={
                 "container.apparmor.security.beta.kubernetes.io/sandbox-exec": "runtime/default",
@@ -235,8 +235,8 @@ def create_sandbox_job(
             name=job_name,
             namespace=SANDBOX_NAMESPACE,
             labels={
-                "app": "aegis-sandbox",
-                "aegis-ai/job-id": job_id[:63],
+                "app": "acros-sandbox",
+                "acros-ai/job-id": job_id[:63],
             },
         ),
         spec=job_spec,

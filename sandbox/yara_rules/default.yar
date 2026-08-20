@@ -2,7 +2,7 @@ rule Suspicious_Strings
 {
     meta:
         description = "Detects common suspicious strings indicative of malware"
-        author = "Aegis AI Baseline"
+        author = "ACROS AI Baseline"
         date = "2026-06-12"
         score = 60
 

@@ -38,7 +38,7 @@ trace.set_tracer_provider(TracerProvider())
 # trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 
 app = FastAPI(
-    title="AegisAI",
+    title="ACROS AI",
     version="1.0.0"
 )
 
@@ -47,7 +47,7 @@ async def on_startup():
     await init_db()
     
     # Run startup diagnostics
-    print("\n--- Aegis Infrastructure Diagnostics ---")
+    print("\n--- ACROS Infrastructure Diagnostics ---")
     
     # 1. MongoDB
     try:
@@ -165,7 +165,7 @@ app.include_router(threats_router)
 @app.get("/")
 async def root():
     return {
-        "message": "AegisAI Backend Running"
+        "message": "ACROS AI Backend Running"
     }
 
 @app.get("/health")
@@ -328,4 +328,4 @@ async def firecracker_health():
     return {
         "status": "ok" if all_ok else "degraded",
         "components": checks
-    }
+    }

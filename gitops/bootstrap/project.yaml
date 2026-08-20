@@ -1,10 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: aegis-project
+  name: acros-project
   namespace: argocd
 spec:
-  description: "ArgoCD project for AegisAI applications"
+  description: "ArgoCD project for ACROS AI applications"
   sourceRepos:
     - "REPLACE_WITH_REPO"
   destinations:

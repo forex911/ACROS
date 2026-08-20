@@ -152,9 +152,9 @@ export const Login: React.FC = () => {
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="gsap-element w-16 h-16 flex items-center justify-center mb-4">
-            <img src="/aegis.png" alt="Aegis Logo" className="w-full h-full object-contain drop-shadow-md" />
+            <img src="/acros.png" alt="ACROS Logo" className="w-full h-full object-contain drop-shadow-md" />
           </div>
-          <h2 className="gsap-element text-2xl font-heading font-black text-[#ffffff] tracking-tighter uppercase">Aegis</h2>
+          <h2 className="gsap-element text-2xl font-heading font-black text-[#ffffff] tracking-tighter uppercase">ACROS</h2>
           <p className="gsap-element text-[#888888] font-mono text-xs mt-2 tracking-widest uppercase">
             {isSignUp ? 'Create Account' : 'Authorization Protocol'}
           </p>

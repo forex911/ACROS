@@ -2,10 +2,10 @@
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
-  name: aegis-worker-scaledobject
+  name: acros-worker-scaledobject
 spec:
   scaleTargetRef:
-    name: aegis-worker
+    name: acros-worker
   pollingInterval: 30
   cooldownPeriod: 300
   minReplicaCount: 1

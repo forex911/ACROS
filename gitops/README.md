@@ -1,4 +1,4 @@
-GitOps layout for AegisAI
+GitOps layout for ACROS AI
 
 Structure:
 

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: redis
-  namespace: aegis-storage
+  namespace: acros-storage
 spec:
   serviceName: redis
   replicas: 1
@@ -43,7 +43,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: redis
-  namespace: aegis-storage
+  namespace: acros-storage
 spec:
   selector:
     app: redis

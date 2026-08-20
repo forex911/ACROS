@@ -19,7 +19,9 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, tr
   return (
     <motion.div
       className="p-8 border border-[#333333] bg-[#000000] flex flex-col cursor-default hover:border-[#ffffff] transition-colors"
-      whileHover={{ y: -2 }}
+      initial="rest"
+      whileHover="hover"
+      variants={{ rest: { y: 0 }, hover: { y: -2 } }}
     >
       <div className="flex items-center justify-between mb-8">
         <h3 className="font-heading font-bold text-sm text-[#888888] uppercase tracking-widest">{title}</h3>

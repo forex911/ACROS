@@ -2,21 +2,21 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: backend-pdb
-  namespace: aegis-backend
+  namespace: acros-backend
 spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app: aegis-backend
+      app: acros-backend
 
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: worker-pdb
-  namespace: aegis-workers
+  namespace: acros-workers
 spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app: aegis-worker
+      app: acros-worker

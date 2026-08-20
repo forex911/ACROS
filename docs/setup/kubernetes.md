@@ -1,6 +1,6 @@
 # Enterprise Kubernetes Deployment
 
-Aegis-AI supports enterprise-grade deployment via Kubernetes and GitOps (ArgoCD).
+ACROS-AI supports enterprise-grade deployment via Kubernetes and GitOps (ArgoCD).
 
 ## Helm Charts
 
@@ -12,9 +12,9 @@ The platform is packaged into 3 distinct Helm charts located in the `deployment/
 ### Deploying manually
 
 ```bash
-helm upgrade --install aegis-backend ./deployment/backend-chart -n Aegis
-helm upgrade --install aegis-frontend ./deployment/frontend-chart -n Aegis
-helm upgrade --install sandbox-worker ./deployment/sandbox-worker-chart -n Aegis
+helm upgrade --install acros-backend ./deployment/backend-chart -n ACROS
+helm upgrade --install acros-frontend ./deployment/frontend-chart -n ACROS
+helm upgrade --install sandbox-worker ./deployment/sandbox-worker-chart -n ACROS
 ```
 
 ## GitOps with ArgoCD

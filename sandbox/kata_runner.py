@@ -39,7 +39,7 @@ async def run_kata(job_id: str, local_path: str):
                     containers=[
                         client.V1Container(
                             name="sandbox-worker",
-                            image="aegis-ai-worker:latest",
+                            image="acros-ai-worker:latest",
                             command=["python", "executor.py"],
                             security_context=client.V1SecurityContext(
                                 privileged=False,
@@ -48,7 +48,7 @@ async def run_kata(job_id: str, local_path: str):
                             ),
                             env=[
                                 client.V1EnvVar(name="JOB_ID", value=job_id),
-                                client.V1EnvVar(name="PAYLOAD_URL", value=f"http://aegis-storage:9000/payloads/{job_id}.py")
+                                client.V1EnvVar(name="PAYLOAD_URL", value=f"http://acros-storage:9000/payloads/{job_id}.py")
                             ]
                         )
                     ]

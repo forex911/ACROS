@@ -4,10 +4,10 @@ replicaCount:
 
 image:
   backend:
-    repository: aegis/backend
+    repository: acros/backend
     tag: latest
   worker:
-    repository: aegis/sandbox-worker
+    repository: acros/sandbox-worker
     tag: latest
 
 resources:
@@ -35,13 +35,13 @@ minio:
   bucket: uploads
 
 s3:
-  endpoint: http://minio.aegis-storage:9000
+  endpoint: http://minio.acros-storage:9000
   accessKey: minio
   secretKey: minio123
   useSSL: false
 
 redis:
-  address: redis.aegis-storage.svc.cluster.local:6379
+  address: redis.acros-storage.svc.cluster.local:6379
 
 mongo:
-  uri: mongodb://mongo-0.mongo-svc.aegis-storage.svc.cluster.local:27017
+  uri: mongodb://mongo-0.mongo-svc.acros-storage.svc.cluster.local:27017

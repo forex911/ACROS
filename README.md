@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">🛡️ Aegis-AI</h1>
+  <h1 align="center">🛡️ ACROS-AI</h1>
   <p align="center">
     <strong>AI-Powered Malware Analysis &amp; Behavioral Intelligence Platform</strong>
   </p>
@@ -15,7 +15,7 @@
 
 ---
 
-Aegis-AI is a cloud-native, distributed malware analysis platform that combines **sandboxed execution**, **real-time behavioral telemetry**, and **machine learning threat classification** to deliver automated, explainable threat intelligence reports — complete with **MITRE ATT&CK mapping**, **IOC extraction**, and **YARA rule matching**.
+ACROS-AI is a cloud-native, distributed malware analysis platform that combines **sandboxed execution**, **real-time behavioral telemetry**, and **machine learning threat classification** to deliver automated, explainable threat intelligence reports — complete with **MITRE ATT&CK mapping**, **IOC extraction**, and **YARA rule matching**.
 
 ---
 
@@ -54,7 +54,7 @@ Aegis-AI is a cloud-native, distributed malware analysis platform that combines 
 
 ## 🏗️ Architecture
 
-![Aegis Architecture](aegis_architecture.png)
+![ACROS Architecture](aegis_architecture.png)
 
 
 
@@ -110,7 +110,7 @@ Aegis-AI is a cloud-native, distributed malware analysis platform that combines 
 ## 📁 Project Structure
 
 ```
-aegis-ai/
+acros-ai/
 ├── backend/                    # FastAPI backend server
 │   ├── app/
 │   │   ├── api/routes/         # REST & WebSocket endpoints
@@ -207,8 +207,8 @@ aegis-ai/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/forex911/Aegis.git aegis
-cd aegis
+git clone https://github.com/forex911/ACROS.git acros
+cd acros
 ```
 
 ### 2. Start infrastructure services
@@ -292,10 +292,10 @@ Individual service Dockerfiles are available in `deployment/docker/`.
 
 ### Kubernetes
 
-Helm charts are in `charts/aegis-platform/`. Deploy with:
+Helm charts are in `charts/acros-platform/`. Deploy with:
 
 ```bash
-helm install aegis-ai charts/aegis-platform/ -n aegis --create-namespace
+helm install acros-ai charts/acros-platform/ -n acros --create-namespace
 ```
 
 ### GitOps (Argo CD)
@@ -315,7 +315,7 @@ Infrastructure provisioning configs for sandbox node pools are in `deployment/te
 > It relies on Python's `sys.addaudithook` and can be bypassed by `ctypes` or native extensions.  
 > For production use with real malware, deploy with **gVisor**, **Firecracker**, or **Kata Containers**.
 
-- Sandbox workers run in a dedicated Kubernetes namespace (`aegis-workers`) on tainted, isolated node pools.
+- Sandbox workers run in a dedicated Kubernetes namespace (`acros-workers`) on tainted, isolated node pools.
 - Network policies drop all egress except internal services (Redis, MinIO).
 - Pod security contexts enforce `readOnlyRootFilesystem`, `runAsNonRoot`, and `cap_drop: ALL`.
 - All artifacts are stored immutably in MinIO with content-addressable SHA256 keys.

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import Lenis from 'lenis';
@@ -86,15 +87,6 @@ export const Workspace: React.FC = () => {
   }, [searchQuery]);
 
   useGSAP(() => {
-    if (!isLoadingJobs && jobs.length > 0) {
-      gsap.fromTo(".gsap-job-item",
-        { opacity: 0, x: -20 },
-        { opacity: 1, x: 0, duration: 0.6, stagger: 0.05, ease: "power2.out" }
-      );
-    }
-  }, { dependencies: [isLoadingJobs, jobs.length], scope: container });
-
-  useGSAP(() => {
     if (selectedJob) {
       gsap.fromTo(".gsap-detail-header",
         { opacity: 0, y: -20 },
@@ -161,7 +153,13 @@ export const Workspace: React.FC = () => {
   };
 
   return (
-    <div ref={container} className="flex h-[calc(100vh-88px-80px)] bg-[#000000] border border-[#333333] overflow-hidden">
+    <motion.div 
+      ref={container} 
+      className="flex h-[calc(100vh-88px-80px)] bg-[#000000] border border-[#333333] overflow-hidden"
+      initial={{ opacity: 0, y: 15, scale: 0.99 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
       {/* ── Job List Sidebar ───────────────────────────────────── */}
       <div className="w-[340px] bg-[#000000] border-r border-[#333333] flex flex-col shrink-0 h-full">
         <div className="p-6 border-b border-[#333333] flex items-center justify-between">
@@ -225,7 +223,7 @@ export const Workspace: React.FC = () => {
                 <div 
                   key={job.id || i}
                   onClick={() => loadJobDetail(job.id)}
-                  className={`gsap-job-item p-4 cursor-pointer transition-all duration-200 border ${
+                  className={`p-4 cursor-pointer transition-all duration-200 border ${
                     selectedJob?.file_id === job.id 
                       ? 'bg-[#111111] border-[#ffffff]' 
                       : 'bg-[#000000] border-[#333333] hover:border-[#888888]'
@@ -375,7 +373,7 @@ export const Workspace: React.FC = () => {
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

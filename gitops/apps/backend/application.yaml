@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: aegis-backend-dev
+  name: acros-backend-dev
   namespace: argocd
 spec:
-  project: aegis-project
+  project: acros-project
   source:
     repoURL: "REPLACE_WITH_REPO"
     targetRevision: HEAD
     path: deployment/kubernetes/k8s/overlays/dev
   destination:
     server: https://kubernetes.default.svc
-    namespace: aegis-backend
+    namespace: acros-backend
   syncPolicy:
     automated:
       prune: true

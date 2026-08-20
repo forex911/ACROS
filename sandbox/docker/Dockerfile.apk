@@ -1,0 +1,32 @@
+FROM ubuntu:22.04
+
+# Minimal APK analysis environment
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    unzip \
+    file \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Android SDK tools (aapt) via standalone command-line tools
+# In production, use the official Android SDK image or mount tools externally
+RUN pip3 install --no-cache-dir androguard
+
+# Create non-root user
+RUN groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -s /bin/bash -m appuser
+
+WORKDIR /app
+
+# Copy the runner and monitor modules
+COPY sandbox/runners /app/runners
+COPY monitor /app/monitor
+
+# Ensure non-root ownership
+RUN chown -R appuser:appgroup /app
+
+USER appuser
+
+ENTRYPOINT ["python3", "/app/runners/apk_runner.py"]

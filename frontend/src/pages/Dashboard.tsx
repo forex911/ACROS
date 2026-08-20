@@ -3,9 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
+import { motion } from 'framer-motion';
 import api from '../api/client';
 import { StatCard } from '../components/dashboard/StatCard';
-import { Activity, ShieldAlert, Cpu, Database, ChevronDown, FileSearch } from 'lucide-react';
+import { AnimatedCpu } from '../components/icons/AnimatedCpu';
+import { AnimatedShieldAlert } from '../components/icons/AnimatedShieldAlert';
+import { AnimatedDatabase } from '../components/icons/AnimatedDatabase';
+import { AnimatedActivity } from '../components/icons/AnimatedActivity';
+import { AnimatedChevron } from '../components/icons/AnimatedChevron';
+import { AnimatedFileSearch } from '../components/icons/AnimatedFileSearch';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 gsap.registerPlugin(useGSAP);
@@ -68,11 +74,21 @@ const Dashboard: React.FC = () => {
     chart_data = []
   } = data || {};
 
-  const mappedChartData = chart_data.map((d: any) => ({
-    name: d.time,
-    Scans: d.scans || 0,
-    Threats: d.detections || 0
-  }));
+  const mappedChartData = chart_data.map((d: any) => {
+    let formattedTime = d.time;
+    if (d.timestamp) {
+      if (timeframe === '1D') {
+        formattedTime = new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } else if (timeframe === '1W' || timeframe === '1M') {
+        formattedTime = new Date(d.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' });
+      }
+    }
+    return {
+      name: formattedTime,
+      Scans: d.scans || 0,
+      Threats: d.detections || 0
+    };
+  });
 
   const threatFeed = data?.threat_feed || [];
 
@@ -85,10 +101,10 @@ const Dashboard: React.FC = () => {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="gsap-card"><StatCard title="Active Scans" value={active_sandboxes.toString()} icon={Cpu} trend={{ value: 12, isUp: true, color: 'emerald' }} /></div>
-        <div className="gsap-card"><StatCard title="Threats Detected" value={total_threats.toString()} icon={ShieldAlert} trend={{ value: 5, isUp: false, color: 'emerald' }} /></div>
-        <div className="gsap-card"><StatCard title="Stored Artifacts" value={stored_artifacts.toString()} icon={Database} trend={{ value: 100, isUp: true, color: 'emerald' }} /></div>
-        <div className="gsap-card"><StatCard title="System Health" value="99.9%" icon={Activity} trend={{ value: 0.1, isUp: true, color: 'emerald' }} /></div>
+        <div className="gsap-card"><StatCard title="Active Scans" value={active_sandboxes.toString()} icon={AnimatedCpu} trend={{ value: 12, isUp: true, color: 'emerald' }} /></div>
+        <div className="gsap-card"><StatCard title="Threats Detected" value={total_threats.toString()} icon={AnimatedShieldAlert} trend={{ value: 5, isUp: false, color: 'emerald' }} /></div>
+        <div className="gsap-card"><StatCard title="Stored Artifacts" value={stored_artifacts.toString()} icon={AnimatedDatabase} trend={{ value: 100, isUp: true, color: 'emerald' }} /></div>
+        <div className="gsap-card"><StatCard title="System Health" value="99.9%" icon={AnimatedActivity} trend={{ value: 0.1, isUp: true, color: 'emerald' }} /></div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -102,7 +118,7 @@ const Dashboard: React.FC = () => {
                 <span>THREATS <strong className="text-[#ffffff] ml-2">{total_threats}</strong></span>
               </div>
             </div>
-            <div className="relative group">
+            <motion.div initial="rest" whileHover="hover" className="relative group">
               <select 
                 value={timeframe} 
                 onChange={(e) => setTimeframe(e.target.value)}
@@ -114,8 +130,8 @@ const Dashboard: React.FC = () => {
                 <option value="3M">Quarterly</option>
                 <option value="ALL">All Time</option>
               </select>
-              <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none group-hover:text-[#000000] text-[#ffffff]" />
-            </div>
+              <AnimatedChevron className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none group-hover:text-[#000000] text-[#ffffff]" />
+            </motion.div>
           </div>
 
           <div className="flex-1 w-full min-h-0" style={{ minWidth: 0 }}>
@@ -225,15 +241,17 @@ const Dashboard: React.FC = () => {
                 <tr><td colSpan={5} className="py-12 text-center text-[#666666] text-xs uppercase">No recent activity.</td></tr>
               )}
               {recent_activity.map((job: any) => (
-                <tr 
+                <motion.tr 
                   key={job.id} 
+                  initial="rest"
+                  whileHover="hover"
                   className="border-b border-[#222222] hover:bg-[#111111] transition-colors cursor-pointer group"
                   onClick={() => navigate(`/analysis/${job.id}`)}
                 >
                   <td className="py-5">
                     <div className="flex items-center gap-4">
                       <div className="w-8 h-8 border border-[#444444] group-hover:border-[#ffffff] transition-colors flex items-center justify-center text-[#ffffff]">
-                        <FileSearch className="w-4 h-4" />
+                        <AnimatedFileSearch className="w-4 h-4" />
                       </div>
                       <span className="font-bold">{job.id.substring(0, 8)}</span>
                     </div>
@@ -259,7 +277,7 @@ const Dashboard: React.FC = () => {
                       <span className="text-[#666666] font-mono text-xs">—</span>
                     )}
                   </td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>

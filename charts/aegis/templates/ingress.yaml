@@ -1,15 +1,15 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: Aegis-ingress
-  namespace: aegis-backend # NGINX often requires ingress in the same namespace as services, but cross-namespace is possible depending on setup
+  name: ACROS-ingress
+  namespace: acros-backend # NGINX often requires ingress in the same namespace as services, but cross-namespace is possible depending on setup
   annotations:
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/proxy-body-size: "500m"
-    nginx.ingress.kubernetes.io/websocket-services: "aegis-backend"
+    nginx.ingress.kubernetes.io/websocket-services: "acros-backend"
 spec:
   rules:
-    - host: Aegis.local
+    - host: ACROS.local
       http:
         paths:
           # Backend API and WebSockets
@@ -17,14 +17,14 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: aegis-backend
+                name: acros-backend
                 port:
                   number: 80
           - path: /ws/
             pathType: Prefix
             backend:
               service:
-                name: aegis-backend
+                name: acros-backend
                 port:
                   number: 80
           # Frontend
@@ -32,6 +32,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: Aegis-frontend
+                name: ACROS-frontend
                 port:
                   number: 80

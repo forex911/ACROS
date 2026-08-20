@@ -85,7 +85,7 @@ if __name__ == "__main__":
         
         # Restrict environment by changing CWD and fixing sys.path
         os.chdir(temp_dir)
-        sys.path = [temp_dir] + [p for p in sys.path if "aegis-ai" not in p and "sentinel-ai" not in p]
+        sys.path = [temp_dir] + [p for p in sys.path if "acros-ai" not in p and "sentinel-ai" not in p]
         
         sys.addaudithook(audit_hook)
         

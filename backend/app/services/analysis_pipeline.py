@@ -25,6 +25,26 @@ import os
 import numpy as np
 from opentelemetry import trace
 
+# ── Monitor modules for telemetry enrichment (integrated, try/except guarded) ──
+try:
+    from monitor.filesystem_monitor.hidden_file_detector import HiddenFileDetector
+    from monitor.filesystem_monitor.persistence_detector import PersistenceDetector
+    from monitor.memory_monitor.memory_tracker import MemoryTracker
+    from monitor.network_monitor.connection_logger import ConnectionLogger
+    from monitor.network_monitor.dns_tracker import DNSTracker
+    from monitor.network_monitor.ip_analyzer import IPAnalyzer
+    from monitor.process_monitor.process_tree import ProcessTree
+    from monitor.process_monitor.suspicious_process import SuspiciousProcessDetector
+    MONITOR_MODULES_AVAILABLE = True
+except ImportError as _import_err:
+    MONITOR_MODULES_AVAILABLE = False
+
+try:
+    from ai_engine.inference.anomaly_detection import AnomalyDetector
+    ANOMALY_DETECTOR_AVAILABLE = True
+except ImportError:
+    ANOMALY_DETECTOR_AVAILABLE = False
+
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
@@ -32,6 +52,48 @@ if root_dir not in sys.path:
 
 logger = logging.getLogger("report_generator")
 tracer = trace.get_tracer(__name__)
+
+def _enrich_telemetry(telemetry_events: list) -> list:
+    """
+    Run all monitor modules against raw telemetry to produce enriched detections.
+    Each module is independently guarded — one failure won't affect others.
+    Returns only the NEW events (caller appends them to the stream).
+    """
+    if not MONITOR_MODULES_AVAILABLE:
+        logger.info("[Enrichment] Monitor modules not available, skipping enrichment")
+        return []
+
+    enrichment_events = []
+
+    modules = [
+        ("HiddenFileDetector", lambda: HiddenFileDetector().analyze_events(telemetry_events)),
+        ("PersistenceDetector", lambda: PersistenceDetector().analyze_events(telemetry_events)),
+        ("MemoryTracker", lambda: MemoryTracker().analyze_telemetry_events(telemetry_events)),
+        ("ConnectionLogger", lambda: ConnectionLogger().analyze_telemetry_connections(telemetry_events)),
+        ("DNSTracker", lambda: DNSTracker().analyze_telemetry_events(telemetry_events)),
+        ("IPAnalyzer", lambda: IPAnalyzer().analyze_telemetry_events(telemetry_events)),
+        ("ProcessTree", lambda: _run_process_tree(telemetry_events)),
+        ("SuspiciousProcess", lambda: SuspiciousProcessDetector().analyze_events(telemetry_events)),
+    ]
+
+    for name, runner in modules:
+        try:
+            detections = runner()
+            if detections:
+                enrichment_events.extend(detections)
+                logger.info(f"[Enrichment] {name}: {len(detections)} detections")
+        except Exception as e:
+            logger.warning(f"[Enrichment] {name} failed (non-fatal): {e}")
+
+    return enrichment_events
+
+
+def _run_process_tree(telemetry_events: list) -> list:
+    """ProcessTree requires build → detect two-step."""
+    tree = ProcessTree()
+    tree.build_from_telemetry(telemetry_events)
+    return tree.detect_suspicious_chains()
+
 
 async def _ingest_to_graph(job_id: str, filename: str, static_results: dict,
                            telemetry_events: list, iocs: list, mitre_mappings: list,
@@ -174,6 +236,18 @@ async def generate_report_pipeline(job_id: str, local_path: str, filename: str):
                 f"[Deobfuscation] Decoded {decoded_count} fields, stripped {layers_count} layers, recovered {iocs_recovered} IOCs"
             )
 
+        # 2.6. Telemetry Enrichment — Run monitor modules to detect behavioral patterns
+        with tracer.start_as_current_span("telemetry_enrichment"):
+            await append_log(job_id, "[Pipeline] Running behavioral telemetry enrichment...")
+            enrichment_events = await asyncio.to_thread(_enrich_telemetry, telemetry_events)
+            if enrichment_events:
+                telemetry_events.extend(enrichment_events)
+                span.set_attribute("enrichment_event_count", len(enrichment_events))
+            await append_log(
+                job_id,
+                f"[Enrichment] Added {len(enrichment_events)} detection events from {8 if MONITOR_MODULES_AVAILABLE else 0} monitor modules"
+            )
+
         # 3. Correlation & Analysis
         with tracer.start_as_current_span("correlation_analysis"):
             await append_log(job_id, "[Pipeline] Mapping extracted telemetry to MITRE ATT&CK framework...")
@@ -281,6 +355,18 @@ async def generate_report_pipeline(job_id: str, local_path: str, filename: str):
                 "telemetry_count": len(telemetry_events),
                 "telemetry_events": telemetry_events
             }
+
+            # ── Anomaly Score (non-fatal, additive only) ──
+            if ANOMALY_DETECTOR_AVAILABLE:
+                try:
+                    anomaly_score = AnomalyDetector().get_anomaly_score(telemetry_events)
+                    report["anomaly_score"] = anomaly_score
+                    await append_log(job_id, f"[AnomalyDetector] Anomaly score: {anomaly_score}")
+                except Exception as e:
+                    logger.warning(f"[AnomalyDetector] Failed (non-fatal): {e}")
+                    report["anomaly_score"] = 0.0
+            else:
+                report["anomaly_score"] = 0.0
 
             # State tracking is handled by the orchestrator (it emits COMPLETED)
             await set_report(job_id, report)

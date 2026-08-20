@@ -1,10 +1,10 @@
 @echo off
-title Aegis - Infrastructure Launcher
+title ACROS - Infrastructure Launcher
 cd /d "%~dp0"
 
 echo.
 echo =========================================
-echo   Aegis - Starting Local Infrastructure
+echo   ACROS - Starting Local Infrastructure
 echo =========================================
 echo.
 

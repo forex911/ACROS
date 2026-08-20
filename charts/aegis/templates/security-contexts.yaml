@@ -1,17 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: aegis-worker
-  namespace: aegis-workers
+  name: acros-worker
+  namespace: acros-workers
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: aegis-worker
+      app: acros-worker
   template:
     metadata:
       labels:
-        app: aegis-worker
+        app: acros-worker
     spec:
       # Enforce execution on dedicated, tainted isolated worker nodes
       affinity:
@@ -40,7 +40,7 @@ spec:
       
       containers:
       - name: worker
-        image: ghcr.io/aegis-ai/worker:latest
+        image: ghcr.io/acros-ai/worker:latest
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true

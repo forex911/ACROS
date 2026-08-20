@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: aegis-monitoring-dev
+  name: acros-monitoring-dev
   namespace: argocd
 spec:
-  project: aegis-project
+  project: acros-project
   source:
     repoURL: "REPLACE_WITH_REPO"
     targetRevision: HEAD
     path: deployment/kubernetes/k8s/overlays/dev
   destination:
     server: https://kubernetes.default.svc
-    namespace: aegis-monitoring
+    namespace: acros-monitoring
   syncPolicy:
     automated:
       prune: true

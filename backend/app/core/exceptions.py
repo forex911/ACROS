@@ -3,10 +3,10 @@ from fastapi.responses import JSONResponse
 from app.core.metrics import sandbox_errors_total
 import logging
 
-logger = logging.getLogger("aegis.exceptions")
+logger = logging.getLogger("acros.exceptions")
 
 class AegisException(Exception):
-    """Base exception for all Aegis-AI errors."""
+    """Base exception for all ACROS-AI errors."""
     def __init__(self, message: str, status_code: int = 400, context: dict = None):
         self.message = message
         self.status_code = status_code

@@ -399,7 +399,7 @@ class ArtifactClassifier:
 
 class RecursiveAnalyzer:
     """
-    Runs the full Aegis static analysis pipeline on each collected
+    Runs the full ACROS static analysis pipeline on each collected
     artifact: hashing, strings, PE/Python analysis, YARA, IOC extraction,
     MITRE mapping, and capability detection.
 

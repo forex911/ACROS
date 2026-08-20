@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: aegis-worker
-  namespace: aegis-workers
+  name: acros-worker
+  namespace: acros-workers
 spec:
   replicas: 3
   template:

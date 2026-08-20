@@ -2,20 +2,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: aegis-worker
+  name: acros-worker
   labels:
-    app: aegis-worker
+    app: acros-worker
 spec:
   replicas: {{ .Values.replicaCount.worker }}
   selector:
     matchLabels:
-      app: aegis-worker
+      app: acros-worker
   template:
     metadata:
       labels:
-        app: aegis-worker
+        app: acros-worker
     spec:
-      serviceAccountName: aegis-worker-sa
+      serviceAccountName: acros-worker-sa
       containers:
         - name: worker
           image: "{{ .Values.image.worker.repository }}:{{ .Values.image.worker.tag }}"

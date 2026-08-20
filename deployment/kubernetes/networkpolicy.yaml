@@ -2,9 +2,9 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: sandbox-egress-deny-internal
-  namespace: aegis-sandbox
+  namespace: acros-sandbox
 spec:
-  podSelector: {} # Applies to all pods in the aegis-sandbox namespace
+  podSelector: {} # Applies to all pods in the acros-sandbox namespace
   policyTypes:
   - Egress
   egress:

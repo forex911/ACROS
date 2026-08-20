@@ -1,28 +1,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: aegis-worker
-  namespace: aegis-workers
+  name: acros-worker
+  namespace: acros-workers
   labels:
-    app: aegis-worker
+    app: acros-worker
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: aegis-worker
+      app: acros-worker
   template:
     metadata:
       labels:
-        app: aegis-worker
+        app: acros-worker
     spec:
-      serviceAccountName: aegis-worker-sa
+      serviceAccountName: acros-worker-sa
       containers:
         - name: worker
-          image: aegis/sandbox-worker:latest
+          image: acros/sandbox-worker:latest
           imagePullPolicy: IfNotPresent
           envFrom:
             - secretRef:
-                name: aegis-worker-secrets
+                name: acros-worker-secrets
           resources:
             requests:
               cpu: "250m"
@@ -49,11 +49,11 @@ spec:
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
-  name: aegis-worker-scaledobject
-  namespace: aegis-workers
+  name: acros-worker-scaledobject
+  namespace: acros-workers
 spec:
   scaleTargetRef:
-    name: aegis-worker
+    name: acros-worker
   pollingInterval: 30  # seconds
   cooldownPeriod:  300
   minReplicaCount: 1

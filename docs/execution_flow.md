@@ -1,4 +1,4 @@
-# Aegis — Analysis Pipeline Execution Flow
+# ACROS — Analysis Pipeline Execution Flow
 
 ## Overview
 

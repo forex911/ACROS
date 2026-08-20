@@ -1,6 +1,6 @@
 apiVersion: v2
-name: aegis-platform
-description: AegisAI platform helm chart (backend, workers, storage)
+name: acros-platform
+description: ACROS AI platform helm chart (backend, workers, storage)
 type: application
 version: 0.1.0
 appVersion: "1.0.0"

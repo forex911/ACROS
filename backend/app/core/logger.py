@@ -1,5 +1,5 @@
 """
-Aegis Structured Logging
+ACROS Structured Logging
 ============================
 Standardized JSON-structured logging using structlog.
 Every log entry includes:
