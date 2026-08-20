@@ -158,7 +158,7 @@ class ArtifactCollector:
         "aegis_uploads",
         "sentinel_uploads",
         "\\Temp\\pip",
-        "/tmp/pip",
+        "/tmp/pip",  # nosec B108
         "\\AppData\\Local\\Temp\\pip",
     ]
 

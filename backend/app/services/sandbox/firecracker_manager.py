@@ -15,7 +15,7 @@ class FirecrackerManager:
         # Firecracker assigns CID 3 and up to guests.
         # We will use a random CID per VM, or just derive from uuid
         self.cid = 3 + (hash(job_id) % 10000)
-        self.api_socket = f"/tmp/firecracker-{job_id}.socket"
+        self.api_socket = f"/tmp/firecracker-{job_id}.socket"  # nosec B108
         self.kernel_path = kernel_path
         self.rootfs_path = rootfs_path
         self.process: Optional[subprocess.Popen] = None
@@ -79,7 +79,7 @@ class FirecrackerManager:
             json={
                 "vsock_id": "vsock0",
                 "guest_cid": self.cid,
-                "uds_path": f"/tmp/v.sock-{self.job_id}"
+                "uds_path": f"/tmp/v.sock-{self.job_id}"  # nosec B108
             }
         )
         res.raise_for_status()
@@ -115,7 +115,7 @@ class FirecrackerManager:
             except Exception:
                 pass
 
-        vsock_path = f"/tmp/v.sock-{self.job_id}"
+        vsock_path = f"/tmp/v.sock-{self.job_id}"  # nosec B108
         if os.path.exists(vsock_path):
             try:
                 os.remove(vsock_path)

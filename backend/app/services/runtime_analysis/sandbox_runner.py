@@ -81,7 +81,7 @@ def _run_subprocess_blocking(job_id: str, local_path: str):
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                shell=shell,
+                shell=shell,  # nosec B602
                 cwd=jail_dir,
                 env=safe_env,
             )

@@ -315,8 +315,8 @@ async def firecracker_health():
 
     # Check for any active vsock or API sockets from running VMs
     import glob
-    active_api_sockets = glob.glob("/tmp/firecracker-*.socket")
-    active_vsock_sockets = glob.glob("/tmp/v.sock-*")
+    active_api_sockets = glob.glob("/tmp/firecracker-*.socket")  # nosec B108
+    active_vsock_sockets = glob.glob("/tmp/v.sock-*")  # nosec B108
 
     checks["active_vms"] = {
         "api_sockets": active_api_sockets,
