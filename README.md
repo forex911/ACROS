@@ -1,4 +1,4 @@
-<img width="745" height="892" alt="image" src="https://github.com/user-attachments/assets/d336eae7-16d3-4e3f-b3a5-7d6423bbf604" />﻿<p align="center">
+<p align="center">
   <h1 align="center">🛡️ Aegis-AI</h1>
   <p align="center">
     <strong>AI-Powered Malware Analysis &amp; Behavioral Intelligence Platform</strong>
