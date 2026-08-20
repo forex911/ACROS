@@ -148,13 +148,13 @@ export const Login: React.FC = () => {
       {/* Decorative Grid Lines */}
       <div className="gsap-bg-grid absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)]"></div>
 
-      <div className="gsap-card p-12 w-full max-w-md relative z-10 border border-[#333333] bg-[#000000]">
+      <div className="gsap-card p-8 w-full max-w-sm relative z-10 border border-[#333333] bg-[#000000]">
         {/* Logo */}
-        <div className="flex flex-col items-center mb-12">
-          <div className="gsap-element w-24 h-24 flex items-center justify-center mb-4">
+        <div className="flex flex-col items-center mb-8">
+          <div className="gsap-element w-16 h-16 flex items-center justify-center mb-4">
             <img src="/aegis.png" alt="Aegis Logo" className="w-full h-full object-contain drop-shadow-md" />
           </div>
-          <h2 className="gsap-element text-4xl font-heading font-black text-[#ffffff] tracking-tighter uppercase">Aegis</h2>
+          <h2 className="gsap-element text-2xl font-heading font-black text-[#ffffff] tracking-tighter uppercase">Aegis</h2>
           <p className="gsap-element text-[#888888] font-mono text-xs mt-2 tracking-widest uppercase">
             {isSignUp ? 'Create Account' : 'Authorization Protocol'}
           </p>
@@ -177,7 +177,7 @@ export const Login: React.FC = () => {
         )}
 
         {/* Form */}
-        <form onSubmit={isSignUp ? handleSignUp : handleLogin} className="space-y-6">
+        <form onSubmit={isSignUp ? handleSignUp : handleLogin} className="space-y-4">
           <div className="gsap-element">
             <label className="block text-[#888888] text-[11px] font-mono font-bold uppercase tracking-widest mb-2">Username</label>
             <div className="relative">
@@ -186,7 +186,7 @@ export const Login: React.FC = () => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-[#000000] border border-[#333333] pl-12 pr-4 py-3.5 text-sm font-mono text-[#ffffff] placeholder:text-[#444444] focus:border-[#ffffff] transition-colors"
+                className="w-full bg-[#000000] border border-[#333333] pl-12 pr-4 py-3 text-sm font-mono text-[#ffffff] placeholder:text-[#444444] focus:border-[#ffffff] transition-colors"
                 placeholder="USER_ID"
                 required
               />
@@ -201,7 +201,7 @@ export const Login: React.FC = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#000000] border border-[#333333] pl-12 pr-4 py-3.5 text-sm font-mono text-[#ffffff] placeholder:text-[#444444] focus:border-[#ffffff] transition-colors"
+                className="w-full bg-[#000000] border border-[#333333] pl-12 pr-4 py-3 text-sm font-mono text-[#ffffff] placeholder:text-[#444444] focus:border-[#ffffff] transition-colors"
                 placeholder="••••••••"
                 required
               />
@@ -217,7 +217,7 @@ export const Login: React.FC = () => {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full bg-[#000000] border border-[#333333] pl-12 pr-4 py-3.5 text-sm font-mono text-[#ffffff] placeholder:text-[#444444] focus:border-[#ffffff] transition-colors"
+                  className="w-full bg-[#000000] border border-[#333333] pl-12 pr-4 py-3 text-sm font-mono text-[#ffffff] placeholder:text-[#444444] focus:border-[#ffffff] transition-colors"
                   placeholder="••••••••"
                   required
                 />
@@ -228,7 +228,7 @@ export const Login: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="gsap-element w-full bg-[#ffffff] text-[#000000] font-heading font-bold uppercase tracking-widest py-4 mt-8 flex items-center justify-center gap-3 disabled:opacity-50 hover:bg-[#000000] hover:text-[#ffffff] border border-[#ffffff] transition-colors active:scale-95"
+            className="gsap-element w-full bg-[#ffffff] text-[#000000] font-heading font-bold uppercase tracking-widest py-3 mt-6 flex items-center justify-center gap-3 disabled:opacity-50 hover:bg-[#000000] hover:text-[#ffffff] border border-[#ffffff] transition-colors active:scale-95"
           >
             {isLoading ? (
               <>
@@ -258,17 +258,7 @@ export const Login: React.FC = () => {
           </button>
         </div>
 
-        {/* Demo hint - only show on login mode */}
-        {!isSignUp && (
-          <div className="gsap-element mt-6 pt-6 border-t border-[#222222] text-center">
-            <p className="text-[10px] font-mono font-bold text-[#666666] mb-3 uppercase tracking-widest">Demo Access</p>
-            <div className="text-xs font-mono flex items-center justify-center gap-3">
-              <code className="text-[#ffffff]">admin</code>
-              <span className="text-[#444444]">/</span>
-              <code className="text-[#ffffff]">aegis123</code>
-            </div>
-          </div>
-        )}
+        
       </div>
     </div>
   );
