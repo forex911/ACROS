@@ -54,7 +54,8 @@ Aegis-AI is a cloud-native, distributed malware analysis platform that combines 
 
 ## 🏗️ Architecture
 
-```
+![Aegis Architecture](aegis_architecture.png)
+
 ┌──────────────────────────────────────────────────────────────────────┐
 │                         User / API Client                            │
 └────────────────────────────────┬─────────────────────────────────────┘
