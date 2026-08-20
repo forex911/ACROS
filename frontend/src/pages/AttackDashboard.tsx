@@ -2,8 +2,21 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Target, Activity, Zap } from 'lucide-react';
 import { AttackMatrix } from '../components/threat/AttackMatrix';
+import { useQuery } from '@tanstack/react-query';
+import api from '../api/client';
 
 const AttackDashboard: React.FC = () => {
+  const { data: tactics = [] } = useQuery({
+    queryKey: ['attackMatrix'],
+    queryFn: async () => {
+      const res = await api.get('/threats/matrix');
+      return res.data;
+    },
+    refetchInterval: 5000,
+  });
+
+  const numTechniques = tactics.reduce((acc: number, tactic: any) => acc + (tactic.techniques?.length || 0), 0);
+
   return (
     <motion.div
       className="flex flex-col w-full overflow-hidden"
@@ -31,7 +44,7 @@ const AttackDashboard: React.FC = () => {
           </div>
           <div className="flex items-center gap-3 px-4 py-2 border border-[#333333] bg-[#000000]">
             <Zap size={14} className="text-[#888888]" />
-            <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#888888]">TECHNIQUES: 4</span>
+            <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#888888]">TECHNIQUES: {numTechniques}</span>
           </div>
         </div>
       </div>

@@ -129,7 +129,11 @@ async def get_attack_matrix(user=Depends(get_current_user)):
     Returns active MITRE ATT&CK techniques grouped by tactic phase.
     Aggregates from all sandbox job results for the matrix view.
     """
+    is_admin = "admin" in user.get("roles", [])
+    base_query = {} if is_admin else {"$or": [{"submitted_by": user["username"]}, {"shared_with": user["username"]}]}
+    
     pipeline = [
+        {"$match": base_query},
         {"$unwind": "$mitre_tactics"},
         {"$group": {
             "_id": "$mitre_tactics.id",
