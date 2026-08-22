@@ -4,6 +4,7 @@ from typing import Optional, List
 
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=3)
+    email: str
     password: str = Field(..., min_length=8)
 
 
@@ -33,3 +34,23 @@ class MeResponse(BaseModel):
 class APIKeyResponse(BaseModel):
     key: str
     created_at: Optional[str]
+
+
+class SupabaseRegisterRequest(BaseModel):
+    username: str = Field(..., min_length=3)
+
+
+class SupabaseUserResponse(BaseModel):
+    username: str
+    email: str
+    roles: List[str]
+    supabase_user_id: Optional[str] = None
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    otp: str
+    new_password: str = Field(..., min_length=8)

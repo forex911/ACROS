@@ -59,6 +59,11 @@ class Settings(BaseSettings):
     NEO4J_USER: str = Field(..., description="Neo4j username")
     NEO4J_PASSWORD: str = Field(..., description="Neo4j password")
 
+
+    # Supabase Authentication
+    SUPABASE_URL: str = Field("", description="Supabase project URL")
+    SUPABASE_JWT_SECRET: str = Field("", description="Supabase JWT secret for token verification")
+
     model_config = SettingsConfigDict(
         env_file=str(Path(__file__).resolve().parents[3] / ".env"),
         env_file_encoding="utf-8",

@@ -105,35 +105,35 @@ TACTIC_ORDER = [
 
 TECHNIQUE_DESCRIPTIONS = {
     # Execution
-    "T1059": "Adversaries may abuse command and script interpreters to execute commands, scripts, or binaries. These interfaces and languages provide ways of interacting with computer systems and are a common feature across many different platforms.",
-    "T1059.001": "Adversaries may abuse PowerShell commands and scripts for execution. PowerShell is a powerful interactive command-line interface and scripting environment included in the Windows operating system.",
-    "T1204": "Adversaries may rely upon specific actions by a user in order to gain execution. Users may be subjected to social engineering to get them to execute malicious payloads by clicking links or opening attachments.",
-    "T1047": "Adversaries may abuse Windows Management Instrumentation (WMI) to execute malicious commands and payloads. WMI is an administration feature that provides a uniform environment to access Windows system components.",
+    "T1059": "Attackers use built-in tools like Command Prompt or scripts to run malicious commands on your system.",
+    "T1059.001": "Attackers use PowerShell—a built-in Windows tool—to run malicious scripts and take control of the machine.",
+    "T1204": "Attackers trick users into clicking a bad link or opening a malicious file to infect their computer.",
+    "T1047": "Attackers abuse Windows administrative tools (WMI) to silently run malicious commands in the background.",
     
     # Defense Evasion
-    "T1027": "Adversaries may obfuscate content or information to impede analysis or prevent detection. This can include hiding payloads in legitimate files or using encryption/encoding.",
-    "T1027.010": "Adversaries may use command obfuscation to hide malicious commands from defenders and security products. This often involves string manipulation, base64 encoding, or variable substitution.",
-    "T1140": "Adversaries may use Obfuscated Files or Information to hide artifacts of an intrusion from analysis. They may require mechanisms to deobfuscate/decode files or information to use them during their operations.",
-    "T1036": "Adversaries may masquerade as legitimate programs or files. Masquerading occurs when the name or location of an executable, legitimate or malicious, is manipulated to evade defenses.",
-    "T1070": "Adversaries may clear or remove evidence of their presence or actions. This can include deleting logs, command history, or specific files to evade detection.",
+    "T1027": "Attackers scramble or hide their malicious code so that antivirus software and security analysts cannot easily detect it.",
+    "T1027.010": "Attackers scramble their typed commands into unreadable text so that security monitoring tools cannot understand what they are doing.",
+    "T1140": "Attackers hide their tools by scrambling them, and only decode them right before they are used to avoid being caught.",
+    "T1036": "Attackers rename their viruses to look like safe, normal files (like svchost.exe or update.exe) to avoid raising suspicion.",
+    "T1070": "Attackers delete system logs and file history to cover their tracks and make it harder to figure out what they did.",
     
     # Command and Control
-    "T1071": "Adversaries may communicate using application layer protocols to avoid detection/network filtering by blending in with existing traffic (e.g. HTTP, HTTPS, DNS).",
-    "T1105": "Adversaries may transfer tools or other files from an external system into a compromised environment. Files may be copied from an external adversary-controlled system to the victim network.",
-    "T1090": "Adversaries may use a connection proxy to direct network traffic between systems or act as an intermediary for network communications to a command and control server to avoid direct connections.",
+    "T1071": "Attackers hide their network traffic by making it look like normal web browsing (HTTP/HTTPS) or DNS requests.",
+    "T1105": "Attackers download their hacking tools and malware onto your network from the internet.",
+    "T1090": "Attackers route their traffic through a middle-man server (proxy) to hide their true location and bypass network blocks.",
     
     # Discovery
-    "T1082": "Adversaries may attempt to get detailed information about the operating system and hardware, including version, patches, architecture, and network configuration.",
-    "T1083": "Adversaries may enumerate files and directories or search in specific locations of a host or network share for certain information.",
-    "T1057": "Adversaries may attempt to get information about running processes on a system to identify defensive capabilities or other potential targets.",
+    "T1082": "Attackers scan your system to learn about your operating system, network layout, and hardware so they can find vulnerabilities.",
+    "T1083": "Attackers snoop through your files and folders looking for passwords, sensitive data, or configuration files.",
+    "T1057": "Attackers check what programs are running on your computer to see if you have antivirus software or to find other targets.",
     
     # Persistence / Privilege Escalation
-    "T1547": "Adversaries may achieve persistence by adding a program to a startup folder or referencing it with a Registry run key to execute when a user logs in.",
-    "T1068": "Adversaries may exploit software vulnerabilities in an attempt to elevate privileges. Exploitation of a software vulnerability occurs when an adversary takes advantage of a programming error in a program.",
+    "T1547": "Attackers modify system settings so their malware automatically restarts every time you turn on your computer.",
+    "T1068": "Attackers take advantage of bugs in your software to gain 'Administrator' or 'System' level control over your computer.",
     
     # Impact
-    "T1486": "Adversaries may encrypt data on target systems or on large numbers of systems in a network to interrupt availability to system and network resources.",
-    "T1490": "Adversaries may inhibit access to data by modifying or deleting backups, shadow copies, or other recovery mechanisms."
+    "T1486": "Attackers use ransomware to lock and encrypt all your files, completely shutting down your ability to use your computer.",
+    "T1490": "Attackers delete your system backups and recovery files so you cannot easily restore your computer after an attack."
 }
 
 def _get_description(tech_id: str, name: str) -> str:

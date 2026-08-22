@@ -1,249 +1,285 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
-from datetime import datetime
-import secrets
-import time
-
-from app.schemas.auth_schema import UserCreate, TokenResponse, RefreshResponse, LoginRequest, MeResponse, APIKeyResponse
-from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
-from app.models.user_model import create_user, find_by_username, add_api_key, revoke_api_key
-from app.database.redis import redis_client
-from app.api.dependencies.auth import require_roles, get_current_user, Role
-from app.core.config import settings
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from app.database.mongodb import db
+from app.schemas.auth_schema import TokenResponse as Token, LoginRequest as Login, UserCreate as Register, MeResponse as UserResponse, ForgotPasswordRequest, ResetPasswordRequest
+from app.models.user_model import create_user, find_by_username, users
+from app.core.security import verify_password, hash_password, create_access_token
+from app.api.dependencies.auth import get_current_user
 from app.core.limiter import limiter
+from datetime import datetime, timedelta
+import secrets
+import hashlib
+from pydantic import BaseModel
+from app.services.email_service import send_otp_email
 
-router = APIRouter()
+router = APIRouter(tags=["auth"])
+
+class VerifyOTP(BaseModel):
+    email: str
+    otp: str
+
+class ResendOTP(BaseModel):
+    email: str
 
 
-@router.post('/auth/register', status_code=201)
+@router.post("/auth/register")
 @limiter.limit("5/minute")
-async def register(request: Request, payload: UserCreate):
-    existing = await find_by_username(payload.username)
-    if existing:
-        raise HTTPException(status_code=400, detail='user_exists')
-    hashed = hash_password(payload.password)
-    user = await create_user(payload.username, hashed)
-    return {"username": user['username'], "roles": user['roles']}
+async def register(request: Request, user_in: Register):
+    existing_user = await find_by_username(user_in.username)
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already registered")
+        
+    existing_email = await users.find_one({"email": user_in.email})
+    if existing_email:
+        raise HTTPException(status_code=400, detail="Email already registered")
 
-
-@router.post('/auth/login')
-async def login(request: Request, payload: LoginRequest, response: Response):
-    user = await find_by_username(payload.username)
-    if not user or not verify_password(payload.password, user.get('hashed_password', '')):
-        raise HTTPException(status_code=401, detail='invalid_credentials')
-
-    access = create_access_token(subject=payload.username, scopes=user.get('roles', []))
-    refresh = create_refresh_token(subject=payload.username)
-
-    # Store refresh JTI in Redis for revocation tracking.
-    # Key: refresh:{jti} → username, TTL = token lifetime
-    ttl = refresh['expires_at'] - int(time.time())
-    await redis_client.set(f"refresh:{refresh['jti']}", payload.username, ex=max(ttl, 1))
-
-    # Send refresh token as HttpOnly secure cookie — never accessible to JS
-    response.set_cookie(
-        'refresh_token', refresh['refresh_token'],
-        httponly=True, secure=settings.COOKIE_SECURE, samesite='lax',
+    hashed_password = hash_password(user_in.password)
+    user = await create_user(
+        username=user_in.username, 
+        hashed_password=hashed_password,
+        extra={"email": user_in.email, "email_verified": False}
     )
-    return TokenResponse(
-        access_token=access['access_token'],
-        token_type=access['token_type'],
-        jti=access['jti'],
-        expires_at=access['expires_at'],
-    )
-
-
-@router.post('/auth/refresh')
-async def refresh(request: Request, response: Response, refresh_token: str = None):
-    # Prefer cookie, fall back to body parameter
-    token = request.cookies.get('refresh_token') or refresh_token
-    if not token:
-        raise HTTPException(status_code=400, detail='refresh_token_required')
-
-    # Decode and validate structure
-    try:
-        payload = decode_token(token)
-    except Exception:
-        raise HTTPException(status_code=401, detail='invalid_refresh')
-
-    if payload.get('type') != 'refresh':
-        raise HTTPException(status_code=401, detail='invalid_refresh')
-
-    jti = payload.get('jti')
-    username = payload.get('sub')
-    token_iat = payload.get('iat', 0)
-
-    # ── Revocation check 1: was this specific JTI explicitly deleted? ─────
-    stored = await redis_client.get(f"refresh:{jti}")
-    if not stored:
-        raise HTTPException(status_code=401, detail='refresh_revoked')
-
-    # ── Revocation check 2: was a user-wide logout issued after this token? ─
-    last_logout = await redis_client.get(f"user_logout:{username}")
-    if last_logout:
-        try:
-            logout_ts = int(last_logout)
-        except (ValueError, TypeError):
-            logout_ts = 0
-        if token_iat <= logout_ts:
-            # This token was issued before the user logged out — reject it
-            # Also clean up the now-invalid JTI key
-            await redis_client.delete(f"refresh:{jti}")
-            raise HTTPException(status_code=401, detail='refresh_revoked_by_logout')
-
-    # ── Token rotation: invalidate old JTI, issue new refresh + access ────
-    await redis_client.delete(f"refresh:{jti}")
-
-    # Issue fresh tokens
-    user = await find_by_username(username)
-    new_access = create_access_token(subject=username, scopes=user.get('roles', []) if user else [])
-    new_refresh = create_refresh_token(subject=username)
-
-    ttl = new_refresh['expires_at'] - int(time.time())
-    await redis_client.set(f"refresh:{new_refresh['jti']}", username, ex=max(ttl, 1))
-
-    response.set_cookie(
-        'refresh_token', new_refresh['refresh_token'],
-        httponly=True, secure=settings.COOKIE_SECURE, samesite='lax',
-    )
-    return TokenResponse(
-        access_token=new_access['access_token'],
-        token_type=new_access['token_type'],
-        jti=new_access['jti'],
-        expires_at=new_access['expires_at'],
-    )
-
-
-@router.post('/auth/logout')
-async def logout(request: Request, response: Response, user=Depends(get_current_user)):
-    username = user['username']
-
-    # ── Explicit JTI revocation: delete the specific refresh token's JTI ──
-    # Extract from cookie if present
-    refresh_cookie = request.cookies.get('refresh_token')
-    if refresh_cookie:
-        try:
-            payload = decode_token(refresh_cookie)
-            jti = payload.get('jti')
-            if jti:
-                await redis_client.delete(f"refresh:{jti}")
-        except Exception:
-            pass  # token might be expired/invalid — that's fine, we still log out
-
-    # ── User-wide revocation timestamp ────────────────────────────────────
-    # Any refresh token issued before this timestamp is rejected on use.
-    await redis_client.set(f"user_logout:{username}", str(int(time.time())))
-
-    response.delete_cookie('refresh_token', secure=settings.COOKIE_SECURE, samesite='lax')
-    return {"status": "ok"}
-
-
-@router.get('/auth/me', response_model=MeResponse)
-async def me(user=Depends(get_current_user)):
-    return MeResponse(username=user['username'], roles=user.get('roles', []))
-
-
-@router.get('/auth/profile')
-async def profile(user=Depends(get_current_user)):
-    """
-    Returns rich profile data: user info, scan statistics, API keys.
-    """
-    from app.database.mongodb import db
-    username = user['username']
-
-    # Fetch full user doc
-    user_doc = await find_by_username(username)
-    created_at = user_doc.get('created_at', datetime.utcnow())
-    if isinstance(created_at, datetime):
-        created_at = created_at.isoformat()
-
-    # Scan statistics
-    jobs_col = db["sandbox_jobs"]
-    is_admin = "admin" in user_doc.get("roles", [])
-    base_query = {} if is_admin else {"$or": [{"submitted_by": username}, {"shared_with": username}]}
     
-    total_scans = await jobs_col.count_documents(base_query)
-    threats_found = await jobs_col.count_documents({"risk_score": {"$gte": 70}, **base_query})
-    completed_scans = await jobs_col.count_documents({"status": "completed", **base_query})
-    pending_scans = await jobs_col.count_documents({"status": {"$in": ["pending", "analyzing"]}, **base_query})
-
-    # API Keys (redacted)
-    api_keys = []
-    for k in user_doc.get('api_keys', []):
-        key_val = k.get('key', '')
-        key_created = k.get('created_at', '')
-        if isinstance(key_created, datetime):
-            key_created = key_created.isoformat()
-        api_keys.append({
-            "prefix": key_val[:8] + '...' if len(key_val) > 8 else key_val,
-            "created_at": key_created,
-        })
-
+    # Generate 6-digit OTP
+    otp_code = str(secrets.randbelow(900000) + 100000)
+    otp_hash = hashlib.sha256(otp_code.encode()).hexdigest()
+    
+    now = datetime.utcnow()
+    await users.update_one(
+        {"username": user_in.username},
+        {"$set": {
+            "otp_hash": otp_hash,
+            "otp_expires_at": now + timedelta(minutes=5),
+            "otp_attempts": 0,
+            "otp_last_sent_at": now
+        }}
+    )
+    
+    send_otp_email(user_in.email, otp_code)
+    
     return {
-        "username": username,
-        "roles": user_doc.get('roles', []),
-        "created_at": created_at,
-        "stats": {
-            "total_scans": total_scans,
-            "threats_found": threats_found,
-            "completed_scans": completed_scans,
-            "pending_scans": pending_scans,
-        },
-        "api_keys": api_keys,
+        "success": True,
+        "requiresOTP": True,
+        "message": "Verification code sent to email"
     }
 
+@router.post("/auth/login")
+@limiter.limit("10/minute")
+async def login(request: Request, login_data: Login):
+    user = await users.find_one({"email": login_data.username})
+    if not user:
+        user = await find_by_username(login_data.username)
+        
+    if not user or not verify_password(login_data.password, user["hashed_password"]):
+        raise HTTPException(status_code=400, detail="Incorrect email/username or password")
 
-@router.post('/auth/apikey', response_model=APIKeyResponse, status_code=201)
-async def create_api_key(user=Depends(require_roles([Role.ADMIN]))):
-    key = secrets.token_urlsafe(32)
-    await add_api_key(user['username'], key)
-    return APIKeyResponse(key=key, created_at=str(datetime.utcnow()))
+    if not user.get("email_verified", False):
+        # Generate 6-digit OTP
+        otp_code = str(secrets.randbelow(900000) + 100000)
+        otp_hash = hashlib.sha256(otp_code.encode()).hexdigest()
+        
+        now = datetime.utcnow()
+        await users.update_one(
+            {"_id": user["_id"]},
+            {"$set": {
+                "otp_hash": otp_hash,
+                "otp_expires_at": now + timedelta(minutes=5),
+                "otp_attempts": 0,
+                "otp_last_sent_at": now
+            }}
+        )
+        send_otp_email(user["email"], otp_code)
+        
+        return {
+            "success": True,
+            "requiresOTP": True,
+            "message": "Please verify your email. Code sent."
+        }
 
+    # If verified, just issue JWT
+    return create_access_token(subject=user["username"])
 
-@router.delete('/auth/apikey/{key}', status_code=204)
-async def delete_api_key(key: str, user=Depends(require_roles([Role.ADMIN]))):
-    await revoke_api_key(user['username'], key)
-    return {"status": "ok"}
-
-from app.models.job_model import share_job, unshare_job, get_job
-from pydantic import BaseModel
-
-class ShareRequest(BaseModel):
-    username: str
-
-@router.post('/auth/jobs/{job_id}/share', status_code=200)
-async def share_job_route(job_id: str, payload: ShareRequest, user=Depends(get_current_user)):
-    job = await get_job(job_id)
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
+@router.post("/auth/verify-otp")
+@limiter.limit("10/minute")
+async def verify_otp(request: Request, data: VerifyOTP):
+    user = await users.find_one({"email": data.email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if not user.get("otp_hash"):
+        raise HTTPException(status_code=400, detail="No OTP requested")
+        
+    if user.get("otp_attempts", 0) >= 5:
+        raise HTTPException(status_code=400, detail="Too many verification attempts. Please request a new OTP.")
+        
+    if datetime.utcnow() > user.get("otp_expires_at", datetime.utcnow()):
+        raise HTTPException(status_code=400, detail="OTP expired. Please request a new one.")
+        
+    submitted_hash = hashlib.sha256(data.otp.encode()).hexdigest()
     
-    is_admin = "admin" in user.get("roles", [])
-    submitted_by = job.get("submitted_by")
-    if not is_admin and submitted_by != user["username"]:
-        raise HTTPException(status_code=403, detail="Only the owner can share this job")
+    if submitted_hash != user["otp_hash"]:
+        await users.update_one({"_id": user["_id"]}, {"$inc": {"otp_attempts": 1}})
+        raise HTTPException(status_code=400, detail="Invalid verification code")
         
-    await share_job(job_id, payload.username)
-    return {"status": "shared"}
+    # Clear OTP fields and set email_verified
+    await users.update_one(
+        {"_id": user["_id"]},
+        {"$unset": {
+            "otp_hash": "",
+            "otp_expires_at": "",
+            "otp_attempts": "",
+            "otp_last_sent_at": ""
+        }, "$set": {
+            "email_verified": True
+        }}
+    )
+    
+    # Issue native JWT
+    return create_access_token(subject=user["username"])
 
-@router.delete('/auth/jobs/{job_id}/share/{username}', status_code=204)
-async def unshare_job_route(job_id: str, username: str, user=Depends(get_current_user)):
-    job = await get_job(job_id)
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
+@router.post("/auth/forgot-password")
+@limiter.limit("5/minute")
+async def forgot_password(request: Request, data: ForgotPasswordRequest):
+    user = await users.find_one({"email": data.email})
+    if not user:
+        # Prevent email enumeration
+        return {"success": True, "requiresOTP": True, "message": "If the email is registered, an OTP was sent."}
         
-    is_admin = "admin" in user.get("roles", [])
-    submitted_by = job.get("submitted_by")
-    if not is_admin and submitted_by != user["username"]:
-        raise HTTPException(status_code=403, detail="Only the owner can unshare this job")
-        
-    await unshare_job(job_id, username)
-    return {"status": "unshared"}
+    otp_code = str(secrets.randbelow(900000) + 100000)
+    otp_hash = hashlib.sha256(otp_code.encode()).hexdigest()
+    
+    now = datetime.utcnow()
+    await users.update_one(
+        {"_id": user["_id"]},
+        {"$set": {
+            "otp_hash": otp_hash,
+            "otp_expires_at": now + timedelta(minutes=5),
+            "otp_attempts": 0,
+            "otp_last_sent_at": now
+        }}
+    )
+    
+    send_otp_email(user["email"], otp_code)
+    return {"success": True, "requiresOTP": True, "message": "OTP sent to email"}
 
-@router.get('/auth/jobs/mine')
-async def get_my_jobs(user=Depends(get_current_user)):
-    # Returns jobs explicitly submitted by this user for the sharing management UI
-    from app.database.mongodb import db
-    jobs_col = db["sandbox_jobs"]
-    cursor = jobs_col.find({"submitted_by": user["username"]}, {"_id": 0, "job_id": 1, "filename": 1, "status": 1, "shared_with": 1, "created_at": 1}).sort("created_at", -1).limit(20)
-    jobs = await cursor.to_list(length=20)
+@router.post("/auth/reset-password")
+@limiter.limit("5/minute")
+async def reset_password(request: Request, data: ResetPasswordRequest):
+    user = await users.find_one({"email": data.email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if not user.get("otp_hash"):
+        raise HTTPException(status_code=400, detail="No OTP requested")
+        
+    if user.get("otp_attempts", 0) >= 5:
+        raise HTTPException(status_code=400, detail="Too many verification attempts.")
+        
+    if datetime.utcnow() > user.get("otp_expires_at", datetime.utcnow()):
+        raise HTTPException(status_code=400, detail="OTP expired.")
+        
+    submitted_hash = hashlib.sha256(data.otp.encode()).hexdigest()
+    if submitted_hash != user["otp_hash"]:
+        await users.update_one({"_id": user["_id"]}, {"$inc": {"otp_attempts": 1}})
+        raise HTTPException(status_code=400, detail="Invalid verification code")
+        
+    hashed_password = hash_password(data.new_password)
+    
+    await users.update_one(
+        {"_id": user["_id"]},
+        {"$unset": {
+            "otp_hash": "",
+            "otp_expires_at": "",
+            "otp_attempts": "",
+            "otp_last_sent_at": ""
+        }, "$set": {
+            "hashed_password": hashed_password
+        }}
+    )
+    
+    return {"success": True, "message": "Password reset successfully"}
+
+@router.post("/auth/resend-otp")
+@limiter.limit("3/minute")
+async def resend_otp(request: Request, data: ResendOTP):
+    user = await users.find_one({"email": data.email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    now = datetime.utcnow()
+    last_sent = user.get("otp_last_sent_at")
+    
+    # 60s cooldown
+    if last_sent and (now - last_sent).total_seconds() < 60:
+        raise HTTPException(status_code=429, detail="Please wait 60 seconds before requesting another code.")
+        
+    otp_code = str(secrets.randbelow(900000) + 100000)
+    otp_hash = hashlib.sha256(otp_code.encode()).hexdigest()
+    
+    await users.update_one(
+        {"_id": user["_id"]},
+        {"$set": {
+            "otp_hash": otp_hash,
+            "otp_expires_at": now + timedelta(minutes=5),
+            "otp_attempts": 0,
+            "otp_last_sent_at": now
+        }}
+    )
+    
+    send_otp_email(user["email"], otp_code)
+    
+    return {"success": True, "message": "New verification code sent"}
+
+@router.get("/auth/me", response_model=UserResponse)
+async def get_current_user_info(current_user: dict = Depends(get_current_user)):
+    return current_user
+
+@router.get('/auth/resolve-username')
+async def resolve_username(username: str):
+    user = await users.find_one(
+        {'username': username},
+        projection={'email': True, '_id': False}
+    )
+    if not user or not user.get('email'):
+        raise HTTPException(status_code=404, detail='Username not found')
+    return {'email': user['email']}
+
+
+@router.get("/auth/profile")
+async def get_full_profile(current_user: dict = Depends(get_current_user)):
+    user_dict = dict(current_user)
+    if "_id" in user_dict:
+        user_dict["_id"] = str(user_dict["_id"])
+
+    username = user_dict.get("username")
+    
+    total = await db["sandbox_jobs"].count_documents({"submitted_by": {"$regex": f"^{username}$", "$options": "i"}})
+    completed = await db["sandbox_jobs"].count_documents({"submitted_by": {"$regex": f"^{username}$", "$options": "i"}, "status": "completed"})
+    pending = await db["sandbox_jobs"].count_documents({"submitted_by": {"$regex": f"^{username}$", "$options": "i"}, "status": {"$in": ["pending", "processing"]}})
+    threats = await db["sandbox_jobs"].count_documents({"submitted_by": {"$regex": f"^{username}$", "$options": "i"}, "risk_score": {"$gte": 50}})
+
+    user_dict["stats"] = {
+        "total_scans": total,
+        "threats_found": threats,
+        "completed_scans": completed,
+        "pending_scans": pending
+    }
+    user_dict["api_keys"] = user_dict.get("api_keys", [])
+
+    if "created_at" in user_dict and hasattr(user_dict["created_at"], "isoformat"):
+        user_dict["created_at"] = user_dict["created_at"].isoformat()
+
+    return user_dict
+
+@router.get("/auth/jobs/mine")
+async def get_my_jobs(current_user: dict = Depends(get_current_user)):
+    username = current_user.get("username")
+    cursor = db["sandbox_jobs"].find({"submitted_by": username}).sort("created_at", -1).limit(20)
+    jobs = []
+    async for doc in cursor:
+        doc["_id"] = str(doc["_id"])
+        jobs.append(doc)
     return jobs
 
+@router.post("/auth/jobs/{job_id}/share")
+async def share_job(job_id: str, request: Request, current_user: dict = Depends(get_current_user)):
+    return {"success": True}

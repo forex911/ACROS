@@ -2,7 +2,7 @@
 FROM python:3.11-bookworm
 
 # Create a non-root user for security and install Node.js
-RUN apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists/* && \
+RUN curl -fsSL https://nodejs.org/dist/v18.17.1/node-v18.17.1-linux-x64.tar.xz | tar -xJ -C /usr/local --strip-components=1 && \
     groupadd -g 1001 appgroup && \
     useradd -u 1001 -g appgroup -s /bin/bash -m appuser
 
@@ -34,4 +34,4 @@ USER appuser
 EXPOSE 8000
 
 # Start Uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

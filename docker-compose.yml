@@ -6,81 +6,85 @@ services:
     image: acros-backend
     container_name: acros-backend
     ports:
-      - "8000:8000"
+    - 8000:8000
     volumes:
-      - ./backend:/sandbox          # Live code mount for hot-reload
-      - ./ai_engine:/sandbox/ai_engine  # Mount AI engine for LLM inference
-      - ./monitor:/sandbox/monitor      # Mount Monitor modules for telemetry enrichment
-      - ./sandbox:/sandbox/sandbox      # Mount Sandbox definitions
-      - backend_uploads:/tmp/acros_uploads
-      - backend_reports:/tmp/acros_reports
+    - ./backend:/sandbox
+    - ./ai_engine:/sandbox/ai_engine
+    - ./monitor:/sandbox/monitor
+    - ./sandbox:/sandbox/sandbox
+    - backend_uploads:/tmp/acros_uploads
+    - backend_reports:/tmp/acros_reports
     environment:
-      - MONGO_URI=mongodb://mongodb:27017
-      - DATABASE_NAME=sentinel_ai
-      - REDIS_URL=redis://redis:6379
-      - NEO4J_URI=bolt://neo4j:7687
-      - NEO4J_USER=neo4j
-      - NEO4J_PASSWORD=test1234
-      - S3_ENDPOINT=http://minio:9000
-      - S3_ACCESS_KEY=minioadmin
-      - S3_SECRET_KEY=minioadmin
-      - S3_BUCKET=uploads
-      - S3_USE_SSL=false
-      - SECRET_KEY=sentinel-dev-secret-key-change-in-production-32chars
-      - ENVIRONMENT=development
-      - SANDBOX_MODE=mock
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    - MONGO_URI=mongodb://mongodb:27017
+    - DATABASE_NAME=sentinel_ai
+    - REDIS_URL=redis://redis:6379
+    - NEO4J_URI=bolt://neo4j:7687
+    - NEO4J_USER=neo4j
+    - NEO4J_PASSWORD=test1234
+    - S3_ENDPOINT=http://minio:9000
+    - S3_ACCESS_KEY=minioadmin
+    - S3_SECRET_KEY=minioadmin
+    - S3_BUCKET=uploads
+    - S3_USE_SSL=false
+    - SECRET_KEY=sentinel-dev-secret-key-change-in-production-32chars
+    - ENVIRONMENT=development
+    - SANDBOX_MODE=mock
+    - RESEND_API_KEY=${RESEND_API_KEY}
+    - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL}
+    - RESEND_FROM_NAME=${RESEND_FROM_NAME}
+    command:
+    - uvicorn
+    - app.main:app
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8000'
+    - --reload
     security_opt:
-      - no-new-privileges:true
-
+    - no-new-privileges:true
   mongodb:
     image: mongo:7
     container_name: acros-mongodb
     ports:
-      - "27017:27017"
+    - 27017:27017
     volumes:
-      - mongodb_data:/data/db
-
+    - mongodb_data:/data/db
   redis:
     image: redis:7-alpine
     container_name: acros-redis
     ports:
-      - "6379:6379"
+    - 6379:6379
     volumes:
-      - redis_data:/data
-
+    - redis_data:/data
   neo4j:
     image: neo4j:5
     container_name: acros-neo4j
     ports:
-      - "7474:7474"
-      - "7687:7687"
+    - 7474:7474
+    - 7687:7687
     environment:
-      - NEO4J_AUTH=neo4j/test1234
-      - NEO4J_server_memory_heap_initial__size=512m
-      - NEO4J_server_memory_heap_max__size=512m
-      - NEO4J_server_memory_pagecache_size=512m
+    - NEO4J_AUTH=neo4j/test1234
+    - NEO4J_server_memory_heap_initial__size=512m
+    - NEO4J_server_memory_heap_max__size=512m
+    - NEO4J_server_memory_pagecache_size=512m
     volumes:
-      - neo4j_data:/data
-
+    - neo4j_data:/data
   minio:
     image: minio/minio
     container_name: acros-minio
     ports:
-      - "9000:9000"
-      - "9001:9001"
+    - 9000:9000
+    - 9001:9001
     environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+    - MINIO_ROOT_USER=minioadmin
+    - MINIO_ROOT_PASSWORD=minioadmin
     command: server /data --console-address ":9001"
     volumes:
-      - minio_data:/data
-
+    - minio_data:/data
 volumes:
-  mongodb_data:
-  redis_data:
-  neo4j_data:
-  minio_data:
-  backend_uploads:
-  backend_reports:
-
+  mongodb_data: null
+  redis_data: null
+  neo4j_data: null
+  minio_data: null
+  backend_uploads: null
+  backend_reports: null

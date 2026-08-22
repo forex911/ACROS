@@ -8,6 +8,7 @@ import { AnimatedFileSearch } from '../components/icons/AnimatedFileSearch';
 import { AnimatedShield } from '../components/icons/AnimatedShield';
 import { AnimatedBriefcase } from '../components/icons/AnimatedBriefcase';
 import { AnimatedTerminal } from '../components/icons/AnimatedTerminal';
+import { AnimatedSettings } from '../components/icons/AnimatedSettings';
 import { AnimatedLogOut } from '../components/icons/AnimatedLogOut';
 import { AnimatedSearch } from '../components/icons/AnimatedSearch';
 import { AnimatedPlus } from '../components/icons/AnimatedPlus';

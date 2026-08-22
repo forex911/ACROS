@@ -1,6 +1,8 @@
 export interface User {
   username: string;
+  email: string;
   roles: string[];
+  supabaseUserId?: string;
 }
 
 export interface Job {
